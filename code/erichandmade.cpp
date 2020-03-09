@@ -59,14 +59,13 @@ RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Color)
     int y0 = Clamp(0, P1.y, Render->Height);
     int y1 = Clamp(0, P2.y, Render->Height);
     
-    // NOTE(ERIC): For each pixel location, draw a square there that's 5x5 or something
-    
     int Px = x0;
     int Py = y0;
     
     int LineHeight = P2.y - P1.y; // b
     int LineWidth = P2.x - P1.x;  // a
     
+    // TODO(Eric): Handle Negative Slopes!!
     float M = (float)LineHeight / (float)LineWidth;
     int B = P1.y;
     
@@ -108,18 +107,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     //RenderWeirdBackground(Render);
     ClearBackground(Render);
     
-    // TODO(ERIC): Remedy hot-reloading??
-    
     v2 LineP1 = v2{50, 50};
     v2 LineP2 = v2{180, 180};
-    
-    //RenderLine(Render, LineP1, LineP2, 0xFF00FF);
-    
     v2 LineP3 = v2{750, 300};
     
-    // NOTE(ERIC): This one shows a dotted line
-    // My theory is because the pixels themselves are u32, and not real32
+    // NOTE(ERIC): I'm thinking dotted line is because int, and not float
+    
+    // TODO(Eric): Our 'line' isn't quite between the two red squares
     RenderLine(Render, LineP1, LineP3, 0x00AAFF);
+    RenderSquare(Render, LineP1, v2{5,5}, 0xFF0000);
+    RenderSquare(Render, LineP3, v2{5,5}, 0xFF0000);
     
     
     //RenderSquare(Render, v2{300, 300}, v2{50,50}, 0xFF0000);
@@ -128,7 +125,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     v2 T2 = v2{145, 100};
     v2 T3 = v2{200, 255};
     
-    RenderLine(Render, T1, T2, 0x00AAFF);
+    //RenderLine(Render, T1, T2, 0x00AAFF);
     //RenderLine(Render, T1, T3, 0x00AAFF);
     //RenderLine(Render, T2, T3, 0x00AAFF);
     
