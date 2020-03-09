@@ -25,7 +25,10 @@ ClearBackground(render_buffer *Render)
     {
         for (int x = 0; x < Render->Width; x++)
         {
-            *pixel++ = 0;
+            if (x <= 10 || y <= 10 || x >= Render->Width - 10 || y >= Render-> Height - 10)
+                *pixel++ = 0xCCCCCC;
+            else
+                *pixel++ = 0;
         }
     }
 }
@@ -52,52 +55,67 @@ RenderSquare(render_buffer* Render, v2 Pos, v2 Size, u32 Color)
 }
 
 inline void
-RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Color)
+RenderLine(render_buffer* Render, v2 P1, v2 P2, int Thickness, u32 Color)
 {
-    int x0 = Clamp(0, P1.x, Render->Width);
-    int x1 = Clamp(0, P2.x, Render->Width);
-    int y0 = Clamp(0, P1.y, Render->Height);
-    int y1 = Clamp(0, P2.y, Render->Height);
-    
-    int Px = x0;
-    int Py = y0;
-    
-    int LineHeight = P2.y - P1.y; // b
-    int LineWidth = P2.x - P1.x;  // a
-    
-    // TODO(Eric): Handle Negative Slopes!!
-    float M = (float)LineHeight / (float)LineWidth;
-    int B = P1.y;
-    
     // y = mx + b
     // m = slope of the line
     // m = y2 - y1 / x2 - x1;
     // b = y intercept : where on the y axis the line intercepts
     
-    // I have M, now just need to solve for x and y?
-    // y = Mx;
     
+    int x0 = Clamp(0, P1.x, Render->Width);
+    int x1 = Clamp(0, P2.x, Render->Width);
+    int y0 = Clamp(0, P1.y, Render->Height);
+    int y1 = Clamp(0, P2.y, Render->Height);
     
+    int LineHeight = P2.y - P1.y;
+    int LineWidth = P2.x - P1.x;
     
-    for (int y = y0; y < y1; y++)
+    float M, B;
+    if (LineWidth == 0)
     {
+        M = 0;
+        B = (float)x0;
         
-        for (int x = x0; x < x1; x++)
+        // Drawing a vertical line
+        for (int y = y0; y < y1; ++y)
         {
-            // if x == y, then we can draw a diagonal line.
-            //int LineY = M * x;
+            v2 PointToDraw = v2{x0, y};
             
-            float Line = ((float)M * (float)x) + B;
+            RenderSquare(Render, PointToDraw, v2{Thickness,Thickness}, Color);
+        }
+    }
+    else
+    {
+        M = (float)LineHeight / (float)LineWidth;
+        B = y0 - (M * x0);
+        
+        for (int x = x0; x < x1; ++x)
+        {
+            float Y = (M * x) + B;
             
-            if (y <= Line)
-            {
-                RenderSquare(Render, v2{x, y}, v2{2,2}, Color);
-            }
+            v2 PointToDraw = v2{x, (int)Y};
+            
+            RenderSquare(Render, PointToDraw, v2{Thickness,Thickness}, Color);
         }
     }
     
 }
 
+inline void
+RenderPlayer(render_buffer* Render)
+{
+    int CenterX = Render->Width / 2;
+    int CenterY = Render-> Height / 2;
+    
+    v2 P1 = v2{CenterX, CenterY};
+    v2 P2 = v2{CenterX, CenterY + 20};
+    v2 P3 = v2{CenterX + 40, CenterY + 10};
+    
+    RenderLine(Render, P1, P2, 1, 0xAAAAAA);
+    RenderLine(Render, P1, P3, 1, 0xAAAAAA);
+    RenderLine(Render, P2, P3, 1, 0xAAAAAA);
+}
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
@@ -111,25 +129,30 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     v2 LineP2 = v2{180, 180};
     v2 LineP3 = v2{750, 300};
     
-    // NOTE(ERIC): I'm thinking dotted line is because int, and not float
     
-    // TODO(Eric): Our 'line' isn't quite between the two red squares
-    RenderLine(Render, LineP1, LineP3, 0x00AAFF);
+    RenderLine(Render, LineP1, LineP3, 1, 0x00AAFF);
+    RenderLine(Render, LineP1, LineP2, 1, 0x00FF00);
+    RenderLine(Render, LineP2, LineP3, 1, 0xFFFF00);
     RenderSquare(Render, LineP1, v2{5,5}, 0xFF0000);
     RenderSquare(Render, LineP3, v2{5,5}, 0xFF0000);
+    RenderSquare(Render, LineP2, v2{5,5}, 0xFF0000);
     
     
-    //RenderSquare(Render, v2{300, 300}, v2{50,50}, 0xFF0000);
-    
+    // Blue triangle test
     v2 T1 = v2{100, 160};
     v2 T2 = v2{145, 100};
     v2 T3 = v2{200, 255};
+    RenderLine(Render, T1, T2, 1, 0x00AAFF);
+    RenderLine(Render, T1, T3, 1, 0x00AAFF);
+    RenderLine(Render, T2, T3, 1, 0x00AAFF);
     
-    //RenderLine(Render, T1, T2, 0x00AAFF);
-    //RenderLine(Render, T1, T3, 0x00AAFF);
-    //RenderLine(Render, T2, T3, 0x00AAFF);
+    // We have our first player!
+    RenderPlayer(Render);
     
-    //RenderLine(Render, LineP2, LineP3, 0x0000FF);
+    // Horizontal line test, scary red line
+    v2 horz1 = v2{300, 500};
+    v2 horz2 = v2{800, 500};
+    RenderLine(Render, horz1, horz2, 3, 0xFF0000);
     
 }
 
@@ -159,6 +182,34 @@ Oh, and early on I was thinking the hot reloading isn't working,
 but it was all just because I wasn't clearing the render buffer between loads
 so it would always have the old drawing there too.
 Then created ClearBackground call every time.
+
+
+*/
+
+
+/*
+
+Blog post 2 (3/9/2020):
+
+I mostly fixed the line between the two points issue
+(it was about 20 pixles too much in both x and y)
+It was what I was using for B - The y-intercept is not just the y coord of the first point
+it has to be calculated from the other variables.
+
+however, the blue line is now too low?
+
+My god..
+
+Showed my co-worker the problem, and he solves the whole thing in 2 minutes.
+A couple code changes, it's working.
+
+We only need 1 loop, for all the x's, and we are calculating y.
+The slope and y-intercept are constants, based off of the points.
+
+Also, drew a little cheeky border
+
+Next step.. transforms??
+Drawing a triangle (player) and turning it
 
 
 */
