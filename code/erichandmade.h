@@ -1,6 +1,25 @@
 
 #include "platform.h"
 
+
+struct v2
+{
+    int x;
+    int y;
+};
+
+struct line
+{
+    v2 P[1];
+};
+
+struct triangle
+{
+    line Lines[2];
+};
+
+
+
 inline game_controller_input *GetController(game_input *Input, int unsigned ControllerIndex)
 {
     Assert(ControllerIndex < ArrayCount(Input->Controllers));
