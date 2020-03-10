@@ -117,6 +117,7 @@ RenderPlayer(render_buffer* Render)
     RenderLine(Render, P2, P3, 1, 0xAAAAAA);
 }
 
+// (render_buffer *Render, game_memory *Memory, game_input *Input)
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     // But step one should actually be: Create asteroids.
