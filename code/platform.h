@@ -22,6 +22,8 @@ typedef double real64;
 #define local_persist static 
 #define global_variable static
 
+#define Pi32 3.14159265359f
+
 #define Kilobytes(Value) ((Value)*1024LL)
 #define Megabytes(Value) (Kilobytes(Value)*1024LL)
 #define Gigabytes(Value) (Megabytes(Value)*1024LL)
@@ -41,20 +43,20 @@ typedef double real64;
 struct render_buffer
 {
     int Width, Height;
-    u32 *Pixels;
+    real32 *Pixels;
     BITMAPINFO Bitmap;
 };
 
 typedef struct game_memory
 {
     bool32 IsInitialized;
-
+    
     u64 PermanentStorageSize;
     void *PermanentStorage; // NOTE(casey): REQUIRED to be cleared to zero at startup
-
+    
     u64 TransientStorageSize;
     void *TransientStorage; // NOTE(casey): REQUIRED to be cleared to zero at startup
-
+    
     //debug_platform_free_file_memory *DEBUGPlatformFreeFileMemory;
     //debug_platform_read_entire_file *DEBUGPlatformReadEntireFile;
     //debug_platform_write_entire_file *DEBUGPlatformWriteEntireFile;
@@ -90,10 +92,10 @@ typedef struct game_controller_input
             
             game_button_state LeftShoulder;
             game_button_state RightShoulder;
-
+            
             game_button_state Back;
             game_button_state Start;
-
+            
             // NOTE(casey): All buttons must be added above this line
             
             game_button_state Terminator;
@@ -105,9 +107,9 @@ typedef struct game_input
 {
     game_button_state MouseButtons[5];
     s32 MouseX, MouseY, MouseZ;
-
+    
     real32 dtForFrame;
-
+    
     game_controller_input Controllers[5];
 } game_input;
 

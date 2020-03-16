@@ -484,9 +484,9 @@ Win32WindowCallback(HWND Window, UINT Message, WPARAM w_param, LPARAM l_param)
             int BufferSize = RenderBuffer.Width * RenderBuffer.Height * sizeof(unsigned int);
             
             // allocate the buffer
-            RenderBuffer.Pixels = (u32 *)VirtualAlloc(0, BufferSize,
-                                                      MEM_COMMIT|MEM_RESERVE,
-                                                      PAGE_READWRITE);
+            RenderBuffer.Pixels = (real32 *)VirtualAlloc(0, BufferSize,
+                                                         MEM_COMMIT|MEM_RESERVE,
+                                                         PAGE_READWRITE);
             
             
             // fill the bimapinfo
@@ -531,7 +531,8 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
     if (RegisterClassA(&WindowClass))
     {
         HWND Window = CreateWindowExA(0, WindowClass.lpszClassName, "Eric Handmade", 
-                                      WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720, 0, 0, 0, 0);
+                                      WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 
+                                      1280, 720, 0, 0, 0, 0);
         if (Window)
         {
             // Timings
@@ -615,6 +616,8 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
             
             while(GlobalRunning)
             {
+                NewInput->dtForFrame = TargetSecondsPerFrame;
+                
                 FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceGameCodeDLLFullPath);
                 int FileTimeResult = CompareFileTime(&NewDLLWriteTime, &GameCode.DLLLastWriteTime);
                 if(FileTimeResult != 0)
