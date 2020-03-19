@@ -1,173 +1,112 @@
 
-
 #include "erichandmade.h"
+#include "tile.cpp"
+#include "render.cpp"
 
-inline void
-RenderWeirdBackground(render_buffer* Render)
+internal void
+MovePlayer(game_state *GameState, real32 dt, v2 ddP)
 {
-    // Render weird background.
-    unsigned int* pixel = (unsigned int*)Render->Pixels;
-    for (int y = 0; y < Render->Height; y++)
+    // TODO(Eric): Pass in the entity that's moving
+    real32 ddPLength = LengthSq(ddP);
+    if(ddPLength > 1.0f)
     {
-        for (int x = 0; x < Render->Width; x++)
-        {
-            *pixel++ = x*y;
-        }
+        ddP *= (1.0f / SquareRoot(ddPLength));
     }
     
-}
-
-inline void
-ClearBackground(render_buffer *Render)
-{
-    unsigned int* pixel = (unsigned int*)Render->Pixels;
-    for (int y = 0; y < Render->Height; y++)
-    {
-        for (int x = 0; x < Render->Width; x++)
-        {
-            // Draw a border, may or may not use something like this later.
-#if 0
-            if (x <= 10 || y <= 10 || x >= Render->Width - 10 || y >= Render-> Height - 10)
-                *pixel++ = 0xCCCCCC;
-            else
-                *pixel++ = 0;
-#endif
-            *pixel++ = 0;
-        }
-    }
-}
-
-inline void
-RenderSquare(render_buffer* Render, v2 Pos, v2 Size, u32 Color)
-{
-    // Draw a rectangle
-    // Our coordinate system is bottom-up
-    int x0 = Clamp(0, Pos.x, Render->Width);
-    int x1 = Clamp(0, Pos.x + Size.x, Render->Width);
-    int y0 = Clamp(0, Pos.y, Render->Height);
-    int y1 = Clamp(0, Pos.y + Size.y, Render->Height);
+    real32 PlayerSpeed = .1f; // m/s^2
+    ddP *= PlayerSpeed;
     
-    // TODO(Eric): Finish converting this function to v2? Why do I need this?
-    //v2 Pos1 = ClampV2(MinV2, Pos, v2{Render->Width, Render->Height});
-    //v2 Pos2 = ClampV2(MinV2, Pos + Size, v2{Render->Width, Render->Height});
+    ddP += -8.0f*GameState->DeltaPlayerPosition;
     
-    Assert(x0 <= Render->Width);
-    Assert(x1 <= Render->Width);
-    Assert(y0 <= Render->Height);
-    Assert(y1 <= Render->Height);
+    v2 OldPlayerP = GameState->PlayerPosition;
+    v2 PlayerDelta = (0.5f*ddP*Square(dt) +
+                      GameState->DeltaPlayerPosition*dt);
+    GameState->DeltaPlayerPosition = ddP*dt + GameState->DeltaPlayerPosition;
+    v2 NewPlayerP = OldPlayerP + PlayerDelta;
     
-    for (int y = y0; y < y1; y++)
-    {
-        u32* RectanglePixel = (u32*)Render->Pixels + x0 + y*Render->Width;
-        for (int x = x0; x < x1; x++)
-        {
-            *RectanglePixel++ = Color;
-        }
-    }
-    
-}
-
-inline void
-RenderLine(render_buffer* Render, v2 P1, v2 P2, int Thickness, u32 Color)
-{
-    // y = mx + b
-    // m = slope of the line
-    // m = y2 - y1 / x2 - x1;
-    // b = y intercept : where on the y axis the line intercepts
+    GameState->PlayerPosition = NewPlayerP;
     
     
-    int x0 = Clamp(0, P1.x, Render->Width);
-    int x1 = Clamp(0, P2.x, Render->Width);
-    int y0 = Clamp(0, P1.y, Render->Height);
-    int y1 = Clamp(0, P2.y, Render->Height);
-    
-    int LineHeight = P2.y - P1.y;
-    int LineWidth = P2.x - P1.x;
-    
-    if (LineHeight < 0 && LineWidth < 0)
-    {
-        x0 = Clamp(0, P2.x, Render->Width);
-        x1 = Clamp(0, P1.x, Render->Width);
-        y0 = Clamp(0, P2.y, Render->Height);
-        y1 = Clamp(0, P1.y, Render->Height);
-        
-        LineHeight = P1.y - P2.y;
-        LineWidth = P1.x - P2.x;
-    }
-    
-    float M, B;
-    if (LineWidth == 0)
-    {
-        M = 0;
-        B = (float)x0;
-        
-        // Drawing a vertical line
-        for (int y = y0; y < y1; ++y)
-        {
-            v2 PointToDraw = v2{x0, y};
-            
-            RenderSquare(Render, PointToDraw, v2{Thickness,Thickness}, Color);
-        }
-    }
-    else
-    {
-        M = (float)LineHeight / (float)LineWidth;
-        B = y0 - (M * x0);
-        
-        for (int x = x0; x < x1; ++x)
-        {
-            float Y = (M * x) + B;
-            
-            v2 PointToDraw = v2{x, (int)Y};
-            
-            RenderSquare(Render, PointToDraw, v2{Thickness,Thickness}, Color);
-        }
-    }
-    
-}
-
-inline void
-RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Color)
-{
-    // X = Radius * cos(Angle * PI/180)
-    // Y = Radius * sin(Angle * PI/180)
-    
-    for (int Angle = 0;
-         Angle <= 365;
-         ++Angle)
-    {
-        // Math is pretty great. This just works. Amazing.
-        s32 X = RoundReal32ToInt32(Radius * Cos(Angle * Pi32/180)) + Center.x;
-        s32 Y = RoundReal32ToInt32(Radius * Sin(Angle * Pi32/180)) + Center.y;
-        
-        RenderSquare(Render, V2(X, Y), V2(1,1), Color);
-    }
-    
-    RenderSquare(Render, Center, V2(1,1), 0xFF0000);
-    
-}
-
-inline void
-RenderPlayer(render_buffer* Render)
-{
-    int CenterX = Render->Width / 2;
-    int CenterY = Render-> Height / 2;
-    
-    v2 P1 = v2{CenterX, CenterY};
-    v2 P2 = v2{CenterX, CenterY + 20};
-    v2 P3 = v2{CenterX + 40, CenterY + 10};
-    
-    RenderLine(Render, P1, P2, 1, 0xAAAAAA);
-    RenderLine(Render, P1, P3, 1, 0xAAAAAA);
-    RenderLine(Render, P2, P3, 1, 0xAAAAAA);
+    // TODO(Eric): Collition With Player here!
 }
 
 // (render_buffer *Render, game_memory *Memory, game_input *Input)
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
-    //Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
+    Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
     
-    // NOTE(Eric): Input.MouseX and Input.MouseY starts at the Top Left corner!
+    game_state *GameState = (game_state *)Memory->PermanentStorage;
+    if (!Memory->IsInitialized)
+    {
+        //u32 TileCountY = MAP_HEIGHT / TILE_SIZE;
+        //u32 TileCountX = MAP_WIDTH / TILE_SIZE;
+        for (u32 IndexY = 0; IndexY <= TILE_COUNT_Y; ++IndexY)
+        {
+            for (u32 IndexX = 0; IndexX <= TILE_COUNT_X; ++IndexX)
+            {
+                v2 NewPoint = V2((real32)(OFFSET_X + (IndexX * TILE_SIZE)), 
+                                 (real32)(OFFSET_Y + (IndexY * TILE_SIZE)));
+                
+                //RenderSquare(Render, NewPoint, v2{2,2}, 1, 0, 0);
+                
+                GameState->Map.Tiles[IndexY][IndexX].BottomLeft = NewPoint;
+            }
+        }
+        
+        GameState->PlayerPosition = V2(60, 60);
+        GameState->DeltaPlayerPosition = V2(0, 0);
+        
+        Memory->IsInitialized = true;
+    }
+    
+    // Get Input from Controllers and Adjust player's movement
+    for(int ControllerIndex = 0;
+        ControllerIndex < ArrayCount(Input->Controllers);
+        ++ControllerIndex)
+    {
+        game_controller_input *Controller = GetController(Input, ControllerIndex);
+        
+        v2 ddP = {};
+        
+        if(Controller->IsAnalog)
+        {
+            // NOTE(casey): Use analog movement tuning
+            ddP = v2{Controller->StickAverageX, Controller->StickAverageY};
+        }
+        else
+        {
+            // NOTE(casey): Use digital movement tuning
+            if(Controller->MoveUp.EndedDown)
+            {
+                ddP.y = 1.0f;
+            }
+            if(Controller->MoveDown.EndedDown)
+            {
+                ddP.y = -1.0f;
+            }
+            if(Controller->MoveLeft.EndedDown)
+            {
+                ddP.x = -1.0f;
+            }
+            if(Controller->MoveRight.EndedDown)
+            {
+                ddP.x = 1.0f;
+            }
+        }
+        
+        MovePlayer(GameState, Input->dtForFrame, ddP);
+    }
+    
+    //
+    // NOTE(Eric): Render
+    //
+    ClearBackground(Render);
+    RenderMap(Render, &GameState->Map);
+    
+    // Draw our sample player
+    RenderSquare(Render, GameState->PlayerPosition, V2(30,30), 0, 255, 255);
+    
+    // NOTE(Eric): Input.MouseX and Input.MouseY origin is the Top Left corner!
     // This doesn't match the coords of what render_buffer uses!
     
     // TODO(Eric): Next I think I will create Entities, so I can start trying out collision detection
@@ -180,113 +119,100 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // Calculating their 'speed' based on dtForFrame
     // Setting their new position: old position + speed
     
-    //RenderWeirdBackground(Render);
-    ClearBackground(Render);
-    
     // Diagonal line proving that we are starting in the lower left
-    //RenderLine(Render, v2{0,0}, v2{Render->Width, Render->Height}, 3, 0x00FF00);
-#if 1
-    local_persist screen_map Map;
-    if (!Map.IsInitialized)
-    {
-        u32 TileCountY = MAP_HEIGHT / TILE_SIZE;
-        u32 TileCountX = MAP_WIDTH / TILE_SIZE;
-        for (u32 IndexY = 0; IndexY <= TileCountY; ++IndexY)
-        {
-            for (u32 IndexX = 0; IndexX <= MAP_WIDTH / 20; ++IndexX)
-            {
-                v2 NewPoint = V2(OFFSET_X + (IndexX * TILE_SIZE), OFFSET_Y + (IndexY * TILE_SIZE));
-                RenderSquare(Render, NewPoint, v2{2,2}, 0xFF0000);
-                
-                Map.Tiles[IndexY][IndexX].BottomLeft = NewPoint;
-            }
-        }
-        
-        // TODO(Eric): If this is true in it's current state, it only draws on the first frame!
-        Map.IsInitialized = false;
-    }
+    //RenderLine(Render, v2{0,0}, v2{(real32)Render->Width, (real32)Render->Height}, 3, 0,1,0);
     
+    //RenderLine(Render, v2{0,0}, v2{60.0, 80.0}, 3, 0,1,0);
+    
+#if 1
     // Check collision
     // If Line.Point1 is within a Tile's area, draw a background rect of that Tile
     v2 TestPoint = V2(360, 80);
-    tile Tile = GetTileAtPosition(&Map, TestPoint);
-    RenderSquare(Render, Tile.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0x0000FF);
+    tile Tile = GetTileAtPosition(&GameState->Map, TestPoint);
+    RenderSquare(Render, Tile.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
+    RenderSquare(Render, TestPoint, v2{3,3}, 0, 1, 0);
     
-    RenderSquare(Render, TestPoint, v2{3,3}, 0x00FF00);
-#endif
+    v2 TestPoint2 = V2(403, 587);
+    tile Tile2 = GetTileAtPosition(&GameState->Map, TestPoint2);
+    RenderSquare(Render, Tile2.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
+    RenderSquare(Render, TestPoint2, v2{3,3}, 0, 1, 0);
+    
     
 #if 0
     // Drawing a grid
     int GridSize = 20;
-    for (int y = 0; y <= Render->Height; y += GridSize)
+    for (real32 y = 0; y <= Render->Height; y += GridSize)
     {
         // Draw horizontal lines
         v2 P1 = v2{0, y};
-        v2 P2 = v2{Render->Width, y};
-        RenderLine(Render, P1, P2, 1, 0x444444);
+        v2 P2 = v2{(real32)Render->Width, y};
+        RenderLine(Render, P1, P2, 1, 0.4, 0.4, 0.4);
     }
-    for (int x = 0; x <= Render->Width; x += GridSize)
+    for (real32 x = 0; x <= Render->Width; x += GridSize)
     {
         // Draw vertical lines
         v2 P1 = v2{x, 0};
-        v2 P2 = v2{x, Render->Height};
-        RenderLine(Render, P1, P2, 1, 0x444444);
+        v2 P2 = v2{x, (real32)Render->Height};
+        RenderLine(Render, P1, P2, 1, 0.4, 0.4, 0.4);
     }
-    
+#endif
     
     v2 LineP1 = v2{50, 50};
     v2 LineP2 = v2{180, 180};
     v2 LineP3 = v2{750, 300};
     
     
-    RenderLine(Render, LineP1, LineP3, 1, 0x00AAFF);
-    RenderLine(Render, LineP1, LineP2, 1, 0x00FF00);
-    RenderLine(Render, LineP2, LineP3, 1, 0xFFFF00);
-    RenderSquare(Render, LineP1, v2{5,5}, 0xFF0000);
-    RenderSquare(Render, LineP3, v2{5,5}, 0xFF0000);
-    RenderSquare(Render, LineP2, v2{5,5}, 0xFF0000);
+    RenderLine(Render, LineP1, LineP3, 1, 0, 0.5, 1);
+    RenderLine(Render, LineP1, LineP2, 1, 0, 1, 0);
+    RenderLine(Render, LineP2, LineP3, 1, 1, 1, 0);
+    RenderSquare(Render, LineP1, v2{5,5}, 1, 0, 0);
+    RenderSquare(Render, LineP3, v2{5,5}, 1, 0, 0);
+    RenderSquare(Render, LineP2, v2{5,5}, 1, 0, 0);
     
     
     // Blue triangle test
     v2 T1 = v2{100, 160};
     v2 T2 = v2{145, 100};
     v2 T3 = v2{200, 255};
-    RenderLine(Render, T1, T2, 1, 0x00AAFF);
-    RenderLine(Render, T1, T3, 1, 0x00AAFF);
-    RenderLine(Render, T2, T3, 1, 0x00AAFF);
+    RenderLine(Render, T1, T2, 1, 0, 0.5, 1);
+    RenderLine(Render, T1, T3, 1, 0, 0.5, 1);
+    RenderLine(Render, T2, T3, 1, 0, 0.5, 1);
     
     // Horizontal line test, scary red line
     v2 horz1 = v2{300, 500};
     v2 horz2 = v2{800, 500};
-    RenderLine(Render, horz1, horz2, 3, 0xFF0000);
+    RenderLine(Render, horz1, horz2, 3, 1, 0, 0);
     
     // Down line test
     v2 down1 = v2{50, 600};
-    v2 down2 = v2{600, 100};
-    RenderLine(Render, down1, down2, 2, 0xCCCCCC);
+    v2 down2 = v2{510, 100};
+    RenderLine(Render, down1, down2, 2, 0.6, 0.6, 0.6);
+    RenderSquare(Render, down1, v2{5,5}, 1, 1, 1);
+    RenderSquare(Render, down2, v2{5,5}, 1, 1, 1);
     
     // Start from left line test (should swap points)
     v2 left1 = v2{400, 400};
     v2 left2 = v2{150, 225};
-    RenderLine(Render, left1, left2, 2, 0xCCCCCC);
-#endif
+    RenderLine(Render, left1, left2, 2, 0.5, 0.5, 0.5);
+    //#endif
     
     
     // We have our first player!
     RenderPlayer(Render);
     
     
+    RenderLine(Render, v2{50, 20}, v2{50, 400}, 2, 1, 1, 1);
     
     
     v2 Center = V2(600, 600);
     real32 Radius = 40;
-    RenderCircle(Render, Center, Radius, 0x00FF00);
+    RenderCircle(Render, Center, Radius, 0, 1, 0);
     
     
     v2 Center2 = V2(200, 300);
     real32 Radius2 = 88;
-    RenderCircle(Render, Center2, Radius2, 0x00FF00);
-    
+    RenderCircle(Render, Center2, Radius2, 0, 1, 0);
+#endif
 }
 
 
@@ -356,6 +282,40 @@ Fixed a bug in RenderLine - Checking if length+width are negative, I'm swapping 
 Our next big problem is actually going to be mapping out our positions,
 meaning we have to store our current map, and where things are located
 so that we can eventually do collision detection
+
+
+
+*/
+
+/*
+
+Blog Post 3 (starting 3/17/2020):
+
+Started by cleaning up some code, basically just moving it around to where it should be
+(no functions in header files, created a couple new files)
+
+got rid of my Clamp calls and added Asserts instead
+
+Refactored Pixels to be void *
+Refactored v2 to be real32
+Added color values as real32 R, G and B
+Added game_state structure and initializing it with Memory
+
+When I finally got all the above changes compiling, my broken screenshot appears
+    Multiple players are drawn.. how??
+Grid dots are just _everywhere_
+
+The grid dots got fixed, that was from a refactor in calling DrawMap I believe..
+I think it was an issue with rendersquare??
+
+Then the dots just everywhere, it was a miscalculation from renderline
+I noticed that when I changed my points by only small values, the dots would change drastically
+it was plotting a point, then the next point was down 1 in y, and about 80 pixels to the right
+and so on, it was wrapping around i think
+the x positions were consistently off, I believe the y positions were always correct
+
+the fix goes to Bresenham's line algorithm
+I just implemented this line for line and it works perfectly for all lines
 
 
 

@@ -330,6 +330,59 @@ Win32DisplayBufferInWindow(render_buffer *Buffer,
                   DIB_RGB_COLORS, SRCCOPY);
 }
 
+internal LRESULT 
+Win32WindowCallback(HWND Window, UINT Message, WPARAM w_param, LPARAM l_param)
+{
+    LRESULT Result = 0;
+    
+    switch(Message)
+    {
+        case WM_CLOSE:
+        case WM_DESTROY:
+        {
+            GlobalRunning = 0;
+        } break;
+        case WM_SIZE:
+        {
+            RECT WindowRect;
+            GetClientRect(Window, &WindowRect);
+            RenderBuffer.Width = WindowRect.right - WindowRect.left;
+            RenderBuffer.Height = WindowRect.bottom - WindowRect.top;
+            
+            if (RenderBuffer.Pixels)
+            {
+                // free
+                VirtualFree(RenderBuffer.Pixels, 0, MEM_RELEASE);
+            }
+            
+            int BytesPerPixel = 4;
+            int BufferSize = RenderBuffer.Width * RenderBuffer.Height * BytesPerPixel;
+            
+            // NOTE(Eric): This was replaced by BytesPerPixel
+            // sizeof(unsigned int);
+            
+            // allocate the buffer
+            RenderBuffer.Pixels = VirtualAlloc(0, BufferSize,
+                                               MEM_COMMIT|MEM_RESERVE,
+                                               PAGE_READWRITE);
+            
+            // fill the bimapinfo
+            RenderBuffer.Bitmap.bmiHeader.biSize = sizeof(RenderBuffer.Bitmap.bmiHeader);
+            RenderBuffer.Bitmap.bmiHeader.biWidth = RenderBuffer.Width;
+            RenderBuffer.Bitmap.bmiHeader.biHeight = RenderBuffer.Height;
+            RenderBuffer.Bitmap.bmiHeader.biPlanes = 1;
+            RenderBuffer.Bitmap.bmiHeader.biBitCount = 32;
+            RenderBuffer.Bitmap.bmiHeader.biCompression = BI_RGB;
+        }
+        default:
+        {
+            Result = DefWindowProcA(Window, Message, w_param, l_param);
+        }
+    }
+    
+    return (Result);
+}
+
 internal void
 Win32ProcessPendingMessages(win32_state *State, game_controller_input *KeyboardController)
 {
@@ -456,60 +509,13 @@ Win32ProcessPendingMessages(win32_state *State, game_controller_input *KeyboardC
     }
 }
 
-internal LRESULT 
-Win32WindowCallback(HWND Window, UINT Message, WPARAM w_param, LPARAM l_param)
-{
-    LRESULT Result = 0;
-    
-    switch(Message)
-    {
-        case WM_CLOSE:
-        case WM_DESTROY:
-        {
-            GlobalRunning = 0;
-        } break;
-        case WM_SIZE:
-        {
-            RECT WindowRect;
-            GetClientRect(Window, &WindowRect);
-            RenderBuffer.Width = WindowRect.right - WindowRect.left;
-            RenderBuffer.Height = WindowRect.bottom - WindowRect.top;
-            
-            if (RenderBuffer.Pixels)
-            {
-                // free
-                VirtualFree(RenderBuffer.Pixels, 0, MEM_RELEASE);
-            }
-            
-            int BufferSize = RenderBuffer.Width * RenderBuffer.Height * sizeof(unsigned int);
-            
-            // allocate the buffer
-            RenderBuffer.Pixels = (real32 *)VirtualAlloc(0, BufferSize,
-                                                         MEM_COMMIT|MEM_RESERVE,
-                                                         PAGE_READWRITE);
-            
-            
-            // fill the bimapinfo
-            RenderBuffer.Bitmap.bmiHeader.biSize = sizeof(RenderBuffer.Bitmap.bmiHeader);
-            RenderBuffer.Bitmap.bmiHeader.biWidth = RenderBuffer.Width;
-            RenderBuffer.Bitmap.bmiHeader.biHeight = RenderBuffer.Height;
-            RenderBuffer.Bitmap.bmiHeader.biPlanes = 1;
-            RenderBuffer.Bitmap.bmiHeader.biBitCount = 32;
-            RenderBuffer.Bitmap.bmiHeader.biCompression = BI_RGB;
-        }
-        default:
-        {
-            Result = DefWindowProcA(Window, Message, w_param, l_param);
-        }
-    }
-    
-    return (Result);
-    
-}
-
 int 
 WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCommand)
 {
+    //char MessageBuffer[500];
+    //sprintf_s(MessageBuffer, "Size of uint: %zd", sizeof(unsigned int));
+    //OutputDebugStringA(MessageBuffer);
+    
     win32_state Win32State = {};
     Win32GetEXEFileName(&Win32State);
     
@@ -783,7 +789,7 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     
                     // Simulation
                     OutputDebugStringA("Calling GameUpdateAndRender");
-                    GameCode.UpdateAndRender(&RenderBuffer, &GameMemory, NewInput); // TODO(ERIC): PAss the GAme MEmory
+                    GameCode.UpdateAndRender(&RenderBuffer, &GameMemory, NewInput);
                     
                     // Render
                     HDC DeviceContext = GetDC(Window);

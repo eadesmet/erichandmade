@@ -1,5 +1,5 @@
-#if !defined(HANDMADE_H)
-
+#ifndef PLATFORM_H
+#define PLATFORM_H
 
 #include <stdint.h>
 #include <windows.h>
@@ -43,7 +43,7 @@ typedef double real64;
 struct render_buffer
 {
     int Width, Height;
-    real32 *Pixels;
+    void *Pixels;
     BITMAPINFO Bitmap;
 };
 
@@ -122,6 +122,14 @@ typedef struct game_input
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
 
 
+inline game_controller_input 
+*GetController(game_input *Input, int unsigned ControllerIndex)
+{
+    Assert(ControllerIndex < ArrayCount(Input->Controllers));
+    
+    game_controller_input *Result = &Input->Controllers[ControllerIndex];
+    return(Result);
+}
 
-#define HANDMADE_H
-#endif
+
+#endif // PLATFORM_H
