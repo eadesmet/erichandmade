@@ -30,6 +30,8 @@ MovePlayer(game_state *GameState, real32 dt, v2 ddP)
     // TODO(Eric): Collition With Player here!
 }
 
+//~NOTE(eric): Game Update and Render
+
 // (render_buffer *Render, game_memory *Memory, game_input *Input)
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
@@ -44,7 +46,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         {
             for (u32 IndexX = 0; IndexX <= TILE_COUNT_X; ++IndexX)
             {
-                v2 NewPoint = V2((real32)(OFFSET_X + (IndexX * TILE_SIZE)), 
+                v2 NewPoint = V2((real32)(OFFSET_X + (IndexX * TILE_SIZE)),
                                  (real32)(OFFSET_Y + (IndexY * TILE_SIZE)));
                 
                 //RenderSquare(Render, NewPoint, v2{2,2}, 1, 0, 0);
@@ -209,9 +211,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     RenderCircle(Render, Center, Radius, 0, 1, 0);
     
     
-    v2 Center2 = V2(200, 300);
-    real32 Radius2 = 88;
+    v2 Center2 = V2(300, 200);
+    real32 Radius2 = 80;
     RenderCircle(Render, Center2, Radius2, 0, 1, 0);
+    
+    v2 Center3 = V2(450, 520);
+    real32 Radius3 = 90;
+    RenderCircle(Render, Center3, Radius3, 1, 1, 0);
+    
+    
 #endif
 }
 
@@ -316,6 +324,11 @@ the x positions were consistently off, I believe the y positions were always cor
 
 the fix goes to Bresenham's line algorithm
 I just implemented this line for line and it works perfectly for all lines
+https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+
+RenderCircle has also been broken
+changed this to Bresenham's circle algorithm and it's almost working
+
 
 
 

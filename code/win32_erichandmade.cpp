@@ -7,7 +7,6 @@
 
 #include "win32_erichandmade.h"
 
-
 global_variable render_buffer RenderBuffer;
 global_variable bool GlobalRunning = true;
 global_variable bool GlobalPause = false;
@@ -330,7 +329,7 @@ Win32DisplayBufferInWindow(render_buffer *Buffer,
                   DIB_RGB_COLORS, SRCCOPY);
 }
 
-internal LRESULT 
+internal LRESULT
 Win32WindowCallback(HWND Window, UINT Message, WPARAM w_param, LPARAM l_param)
 {
     LRESULT Result = 0;
@@ -509,7 +508,7 @@ Win32ProcessPendingMessages(win32_state *State, game_controller_input *KeyboardC
     }
 }
 
-int 
+int
 WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCommand)
 {
     //char MessageBuffer[500];
@@ -536,8 +535,8 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
     
     if (RegisterClassA(&WindowClass))
     {
-        HWND Window = CreateWindowExA(0, WindowClass.lpszClassName, "Eric Handmade", 
-                                      WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 
+        HWND Window = CreateWindowExA(0, WindowClass.lpszClassName, "Eric Handmade",
+                                      WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                                       1280, 720, 0, 0, 0, 0);
         if (Window)
         {
@@ -597,7 +596,7 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                 ReplayBuffer->MemoryMap = CreateFileMapping(ReplayBuffer->FileHandle, 0, PAGE_READWRITE,
                                                             MaxSize.HighPart, MaxSize.LowPart, 0);
                 
-                ReplayBuffer->MemoryBlock = MapViewOfFile(ReplayBuffer->MemoryMap, FILE_MAP_ALL_ACCESS, 
+                ReplayBuffer->MemoryBlock = MapViewOfFile(ReplayBuffer->MemoryMap, FILE_MAP_ALL_ACCESS,
                                                           0, 0, Win32State.TotalSize);
                 if(ReplayBuffer->MemoryBlock)
                 {
@@ -795,8 +794,8 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     HDC DeviceContext = GetDC(Window);
                     win32_window_dimension Dimension = Win32GetWindowDimension(Window);
                     Win32DisplayBufferInWindow(&RenderBuffer, DeviceContext, Dimension.Width, Dimension.Height);
-                    //StretchDIBits(DeviceContext, 0, 0, RenderBuffer.Width, RenderBuffer.Height, 
-                    //              0, 0, RenderBuffer.Width, RenderBuffer.Height, RenderBuffer.Pixels, 
+                    //StretchDIBits(DeviceContext, 0, 0, RenderBuffer.Width, RenderBuffer.Height,
+                    //              0, 0, RenderBuffer.Width, RenderBuffer.Height, RenderBuffer.Pixels,
                     //              &RenderBuffer.Bitmap, DIB_RGB_COLORS, SRCCOPY);
                     ReleaseDC(Window, DeviceContext);
                 } // End If(!GlobalPause)

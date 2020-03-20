@@ -65,7 +65,7 @@ RenderSquare(render_buffer* Render, v2 Pos, v2 Size, real32 R, real32 G, real32 
 #else
     
     u32 Pitch = Render->Width*4;
-    u8 *Row = ((u8 *)Render->Pixels + 
+    u8 *Row = ((u8 *)Render->Pixels +
                (RoundReal32ToInt32(Pos.x*4)) +
                RoundReal32ToInt32(Pos.y*Pitch));
     
@@ -77,7 +77,7 @@ RenderSquare(render_buffer* Render, v2 Pos, v2 Size, real32 R, real32 G, real32 
         for(int X = RoundReal32ToInt32(Pos.x);
             X < Pos2.x;
             ++X)
-        {            
+        {
             *Pixel++ = Color;
         }
         
@@ -237,8 +237,127 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, real32 R, real32 G
     // X = Radius * cos(Angle * PI/180)
     // Y = Radius * sin(Angle * PI/180)
     
-    // TODO(ERIC): This is broken too, fix this!
+    // TODO(ERIC): Doesn't quite work yet; x and y have to be the same as is
     
+    // Bresenham circle drawing algorithm
+    real32 x = 0;
+    real32 y = Radius;
+    
+    real32 DecisionParameter = 3 - (2*Radius);
+    
+    // This should only draw the points for the first octant
+    while (x <= y)
+    {
+        if (DecisionParameter < 0)
+        {
+            x = x + 1;
+            y = y;
+            DecisionParameter = DecisionParameter + (4 * x) + 6;
+        }
+        else if (DecisionParameter >= 0)
+        {
+            x = x + 1;
+            y = y - 1;
+            DecisionParameter = DecisionParameter + 4 * (x - y) + 10;
+        }
+        
+        // Octant 1
+        //RenderSquare(Render, V2(Center.x + x, Center.y + y), V2(1,1), R, G, B);
+        // Octant 2
+        //RenderSquare(Render, V2(Center.y + y, Center.x + x), V2(1,1), R, G, B);
+        // Octant 3
+        //RenderSquare(Render, V2(Center.y + y, Center.x - x), V2(1,1), R, G, B);
+        // Octant 4
+        //RenderSquare(Render, V2(Center.x + x, Center.y - y), V2(1,1), R, G, B);
+        // Octant 5
+        //RenderSquare(Render, V2(Center.x - x, Center.y - y), V2(1,1), R, G, B);
+        // Octant 6
+        //RenderSquare(Render, V2(Center.y - y, Center.x - x), V2(1,1), R, G, B);
+        // Octant 7
+        //RenderSquare(Render, V2(Center.y - y, Center.x + x), V2(1,1), R, G, B);
+        // Octant 8
+        //RenderSquare(Render, V2(Center.x - x, Center.y + y), V2(1,1), R, G, B);
+        
+        
+        RenderSquare(Render, V2(Center.x + x, Center.y + y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x - x, Center.y + y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x - x, Center.y - y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x + x, Center.y - y), V2(1,1), R, G, B);
+        
+        
+        {
+            RenderSquare(Render, V2(Center.x + y, Center.y + x), V2(1,1), R, G, B);
+            RenderSquare(Render, V2(Center.x + y, Center.y - x), V2(1,1), R, G, B);
+            RenderSquare(Render, V2(Center.x - y, Center.y + x), V2(1,1), R, G, B);
+            RenderSquare(Render, V2(Center.x - y, Center.y - x), V2(1,1), R, G, B);
+            
+            //RenderSquare(Render, V2(Center.y + x, Center.x + y), V2(1,1), R, G, B);
+            //RenderSquare(Render, V2(Center.y + x, Center.x - y), V2(1,1), R, G, B);
+            //RenderSquare(Render, V2(Center.y - x, Center.x + y), V2(1,1), R, G, B);
+            //RenderSquare(Render, V2(Center.y - x, Center.x - y), V2(1,1), R, G, B);
+        }
+        
+    }
+    
+    
+    RenderSquare(Render, Center, V2(2,2), 0, 1, 0);
+    
+    
+#if 0 // MidPoint Drawing Algorithm
+    real32 x = Radius;
+    real32 y = 0;
+    
+    // Initial Point?
+    RenderSquare(Render, V2(x, y), V2(1,1), R, G, B);
+    
+    if (Radius > 0)
+    {
+        RenderSquare(Render, V2(x + Center.x, -y + Center.y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(y + Center.x, x + Center.y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(-y + Center.x, x + Center.y), V2(1,1), R, G, B);
+    }
+    
+    real32 P = 1 - Radius;
+    while (x > y)
+    {
+        ++y;
+        
+        if (P <= 0)
+        {
+            P = P + (2*y) + 1;
+        }
+        else // MidPoint is inside or on the perimeter
+        {
+            --x;
+            P = P + (2*y) + 1;
+        }
+        
+        if (x < y) // All the perimeter points have already been printed
+        {
+            break;
+        }
+        
+        // Rendering the  generated point and its reflection
+        // in the other octants
+        RenderSquare(Render, V2(x + Center.x, y + Center.y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(-x + Center.x, y + Center.y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(x + Center.x, -y + Center.y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(-x + Center.x, -y + Center.y), V2(1,1), R, G, B);
+        
+        // If  the generated point is on the line x = y then
+        // the permimeter points have already been printed
+        if (x != y)
+        {
+            RenderSquare(Render, V2(y + Center.x, x + Center.y), V2(1,1), R, G, B);
+            RenderSquare(Render, V2(-y + Center.x, x + Center.y), V2(1,1), R, G, B);
+            RenderSquare(Render, V2(y + Center.x, -x + Center.y), V2(1,1), R, G, B);
+            RenderSquare(Render, V2(-y + Center.x, -x + Center.y), V2(1,1), R, G, B);
+        }
+        
+    }
+#endif
+    
+#if 0
     for (int Angle = 0;
          Angle <= 365;
          ++Angle)
@@ -251,6 +370,7 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, real32 R, real32 G
     }
     
     RenderSquare(Render, Center, V2(1,1), 1, 0, 0);
+#endif
     
 }
 

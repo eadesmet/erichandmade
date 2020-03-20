@@ -21,6 +21,7 @@ V2(real32 X, real32 Y)
     
     return(Result);
 }
+
 inline v2
 operator*(real32 A, v2 B)
 {
