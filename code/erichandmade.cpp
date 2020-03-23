@@ -121,6 +121,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // Calculating their 'speed' based on dtForFrame
     // Setting their new position: old position + speed
     
+    
+    // TODO(Eric): Watch the HH episode about enforcing 60 fps
+    // This will hopefully bring down the CPU use and will be useful
+    // to set up our timings
+    
     // Diagonal line proving that we are starting in the lower left
     //RenderLine(Render, v2{0,0}, v2{(real32)Render->Width, (real32)Render->Height}, 3, 0,1,0);
     
