@@ -7,10 +7,6 @@
 
 #include "win32_erichandmade.h"
 
-global_variable render_buffer RenderBuffer;
-global_variable bool GlobalRunning = true;
-global_variable bool GlobalPause = false;
-
 
 // NOTE(casey): XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -552,6 +548,11 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
             real32 GameUpdateHz = (MonitorRefreshHz / 2.0f);
             real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
             
+            // NOTE(casey): Set the Windows scheduler granularity to 1ms
+            // so that our Sleep() can be mre ganular.
+            UINT DesiredSchedulerMS = 1;
+            bool32 SleepIsGranular = (timeBeginPeriod(DesiredSchedulerMS) == TIMERR_NOERROR);
+            
             // Init GameMemory and pass it through to the game
 #if HANDMADE_INTERNAL
             LPVOID BaseAddress = (LPVOID)Terabytes(2);
@@ -790,6 +791,48 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     OutputDebugStringA("Calling GameUpdateAndRender");
                     GameCode.UpdateAndRender(&RenderBuffer, &GameMemory, NewInput);
                     
+                    // NOTE(ERIC): Enforce 30 fps
+                    LARGE_INTEGER WorkCounter = Win32GetWallClock();
+                    real32 WorkSecondsElapsed = Win32GetSecondsElapsed(LastCounter, WorkCounter);
+                    
+                    // TODO(casey): NOT TESTED YET!  PROBABLY BUGGY!!!!!
+                    real32 SecondsElapsedForFrame = WorkSecondsElapsed;
+                    if(SecondsElapsedForFrame < TargetSecondsPerFrame)
+                    {
+                        if(SleepIsGranular)
+                        {
+                            DWORD SleepMS = (DWORD)(1000.0f * (TargetSecondsPerFrame -
+                                                               SecondsElapsedForFrame));
+                            if(SleepMS > 0)
+                            {
+                                Sleep(SleepMS);
+                            }
+                        }
+                        
+                        real32 TestSecondsElapsedForFrame = Win32GetSecondsElapsed(LastCounter,
+                                                                                   Win32GetWallClock());
+                        if(TestSecondsElapsedForFrame < TargetSecondsPerFrame)
+                        {
+                            // TODO(casey): LOG MISSED SLEEP HERE
+                        }
+                        
+                        while(SecondsElapsedForFrame < TargetSecondsPerFrame)
+                        {
+                            SecondsElapsedForFrame = Win32GetSecondsElapsed(LastCounter,
+                                                                            Win32GetWallClock());
+                        }
+                    }
+                    else
+                    {
+                        // TODO(casey): MISSED FRAME RATE!
+                        // TODO(casey): Logging
+                    }
+                    
+                    LARGE_INTEGER EndCounter = Win32GetWallClock();
+                    real32 MSPerFrame = 1000.0f*Win32GetSecondsElapsed(LastCounter, EndCounter);
+                    LastCounter = EndCounter;
+                    
+                    
                     // Render
                     HDC DeviceContext = GetDC(Window);
                     win32_window_dimension Dimension = Win32GetWindowDimension(Window);
@@ -798,7 +841,7 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     //              0, 0, RenderBuffer.Width, RenderBuffer.Height, RenderBuffer.Pixels,
                     //              &RenderBuffer.Bitmap, DIB_RGB_COLORS, SRCCOPY);
                     ReleaseDC(Window, DeviceContext);
-                } // End If(!GlobalPause)
+                }
             }
         }
     }

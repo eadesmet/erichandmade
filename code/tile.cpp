@@ -1,10 +1,12 @@
 
 #include "tile.h"
 
+// NOTE(Eric): Is In Rectangle? (Instead of being dependent on the tilemap?
+
 inline tile
 GetTileAtPosition(screen_map *Map, v2 Pos)
 {
-    // NOTE(ERIC): I'm not sure if this is a great way to get a tile
+    // NOTE(Eric): I'm not sure if this is a great way to get a tile
     // It's certainly efficient, but I can't quite get the equation correct.
     // It's also very dependent on the indexes being off the size / offset
     /*

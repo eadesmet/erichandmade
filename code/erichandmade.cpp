@@ -30,7 +30,7 @@ MovePlayer(game_state *GameState, real32 dt, v2 ddP)
     // TODO(Eric): Collition With Player here!
 }
 
-//~NOTE(eric): Game Update and Render
+//~NOTE(Eric): Game Update and Render
 
 // (render_buffer *Render, game_memory *Memory, game_input *Input)
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
@@ -143,6 +143,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     tile Tile2 = GetTileAtPosition(&GameState->Map, TestPoint2);
     RenderSquare(Render, Tile2.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
     RenderSquare(Render, TestPoint2, v2{3,3}, 0, 1, 0);
+    
+    v2 TestPoint3 = V2(300, 405);
+    tile Tile3 = GetTileAtPosition(&GameState->Map, TestPoint3);
+    RenderSquare(Render, Tile3.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
+    RenderSquare(Render, TestPoint3, v2{3,3}, 0, 1, 0);
     
     
 #if 0

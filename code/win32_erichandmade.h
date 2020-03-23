@@ -1,5 +1,11 @@
 
 #define WIN32_STATE_FILE_NAME_COUNT MAX_PATH
+
+global_variable render_buffer RenderBuffer;
+global_variable bool GlobalRunning = true;
+global_variable bool GlobalPause = false;
+global_variable s64 GlobalPerfCountFrequency;
+
 struct win32_replay_buffer
 {
     HANDLE FileHandle;
@@ -16,7 +22,7 @@ struct win32_state
     
     HANDLE RecordingHandle;
     int InputRecordingIndex;
-
+    
     HANDLE PlaybackHandle;
     int InputPlayingIndex;
     
@@ -34,12 +40,12 @@ struct win32_game_code
 {
     HMODULE GameCodeDLL;
     FILETIME DLLLastWriteTime;
-
+    
     // IMPORTANT(casey): Either of the callbacks can be 0!  You must
     // check before calling.
     game_update_and_render *UpdateAndRender;
     
-
+    
     bool32 IsValid;
 };
 
@@ -72,21 +78,21 @@ CatStrings(size_t SourceACount, char *SourceA,
            size_t DestCount, char *Dest)
 {
     // TODO(casey): Dest bounds checking!
-
+    
     for(int Index = 0;
         Index < SourceACount;
         ++Index)
     {
         *Dest++ = *SourceA++;
     }
-
+    
     for(int Index = 0;
         Index < SourceBCount;
         ++Index)
     {
         *Dest++ = *SourceB++;
     }
-
+    
     *Dest++ = 0;
 }
 
@@ -95,6 +101,14 @@ Win32GetWallClock(void)
 {
     LARGE_INTEGER Result;
     QueryPerformanceCounter(&Result);
+    return(Result);
+}
+
+inline real32
+Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
+{
+    real32 Result = ((real32)(End.QuadPart - Start.QuadPart) /
+                     (real32)GlobalPerfCountFrequency);
     return(Result);
 }
 
