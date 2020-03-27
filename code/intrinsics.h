@@ -16,6 +16,13 @@ AbsoluteValue(real32 Real32)
     return(Result);
 }
 
+inline real32
+RoundReal32(real32 Real32)
+{
+    real32 Result = roundf(Real32);
+    return(Result);
+}
+
 inline s32
 RoundReal32ToInt32(real32 Real32)
 {
@@ -30,14 +37,14 @@ RoundReal32ToUInt32(real32 Real32)
     return(Result);
 }
 
-inline s32 
+inline s32
 FloorReal32ToInt32(real32 Real32)
 {
     s32 Result = (s32)floorf(Real32);
     return(Result);
 }
 
-inline s32 
+inline s32
 CeilReal32ToInt32(real32 Real32)
 {
     s32 Result = (s32)ceilf(Real32);

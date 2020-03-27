@@ -1,7 +1,7 @@
 
 #include "tile.h"
 
-// NOTE(Eric): Is In Rectangle? (Instead of being dependent on the tilemap?
+// NOTE(Eric): 'Is In Rectangle'? (Instead of being dependent on the tilemap)?
 
 inline tile
 GetTileAtPosition(screen_map *Map, v2 Pos)
@@ -30,7 +30,7 @@ GetTileAtPosition(screen_map *Map, v2 Pos)
     
     while(!Found)
     {
-        for (u16 IndexX = 0; IndexX <= TILE_COUNT_X; ++IndexX)
+        for (u16 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
         {
             tile Tile = Map->Tiles[IndexY][IndexX];
             if ((Pos.x >= Tile.BottomLeft.x) &&

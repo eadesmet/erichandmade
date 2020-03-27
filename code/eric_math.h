@@ -122,4 +122,12 @@ LengthSq(v2 A)
     return(Result);
 }
 
+inline real32
+RadiansToDegrees(real32 R)
+{
+    real32 Result = R * (180 / Pi32);
+    
+    return(Result);
+}
+
 #endif //ERIC_MATH_H

@@ -267,7 +267,7 @@ Win32LoadGameCode(char *SourceDLLName, char *TempDLLName)
     
     Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
     
-    //Sleep(1000);
+    Sleep(100);
     CopyFile(SourceDLLName, TempDLLName, FALSE);
     
     Result.GameCodeDLL = LoadLibraryA(TempDLLName);
@@ -511,6 +511,10 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
     //sprintf_s(MessageBuffer, "Size of uint: %zd", sizeof(unsigned int));
     //OutputDebugStringA(MessageBuffer);
     
+    LARGE_INTEGER PerfCountFrequencyResult;
+    QueryPerformanceFrequency(&PerfCountFrequencyResult);
+    GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+    
     win32_state Win32State = {};
     Win32GetEXEFileName(&Win32State);
     
@@ -620,6 +624,7 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
             
             win32_game_code GameCode = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath);
             
+            u64 LastCycleCount = __rdtsc();
             while(GlobalRunning)
             {
                 NewInput->dtForFrame = TargetSecondsPerFrame;
@@ -788,7 +793,7 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     
                     
                     // Simulation
-                    OutputDebugStringA("Calling GameUpdateAndRender");
+                    //OutputDebugStringA("Calling GameUpdateAndRender\n");
                     GameCode.UpdateAndRender(&RenderBuffer, &GameMemory, NewInput);
                     
                     // NOTE(ERIC): Enforce 30 fps
@@ -841,6 +846,20 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     //              0, 0, RenderBuffer.Width, RenderBuffer.Height, RenderBuffer.Pixels,
                     //              &RenderBuffer.Bitmap, DIB_RGB_COLORS, SRCCOPY);
                     ReleaseDC(Window, DeviceContext);
+                    
+#if 1
+                    u64 EndCycleCount = __rdtsc();
+                    u64 CyclesElapsed = EndCycleCount - LastCycleCount;
+                    LastCycleCount = EndCycleCount;
+                    
+                    real64 FPS = 0.0f;
+                    real64 MCPF = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
+                    
+                    char FPSBuffer[256];
+                    _snprintf_s(FPSBuffer, sizeof(FPSBuffer),
+                                "%.02fms/f,  %.02ff/s,  %.02fmc/f\n", MSPerFrame, FPS, MCPF);
+                    OutputDebugStringA(FPSBuffer);
+#endif
                 }
             }
         }

@@ -6,6 +6,13 @@
 internal void
 MovePlayer(game_state *GameState, real32 dt, v2 ddP)
 {
+    // NOTE(Eric): Player Movement notes:
+    // The Center point will always remain the same!
+    // Front point will change, then the calculation for the other two
+    // will have to be from the front calculated with the center and width
+    
+    // The FrontP has to be around a circle!
+    
     // TODO(Eric): Pass in the entity that's moving
     real32 ddPLength = LengthSq(ddP);
     if(ddPLength > 1.0f)
@@ -42,9 +49,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         //u32 TileCountY = MAP_HEIGHT / TILE_SIZE;
         //u32 TileCountX = MAP_WIDTH / TILE_SIZE;
-        for (u32 IndexY = 0; IndexY <= TILE_COUNT_Y; ++IndexY)
+        for (u32 IndexY = 0; IndexY < TILE_COUNT_Y; ++IndexY)
         {
-            for (u32 IndexX = 0; IndexX <= TILE_COUNT_X; ++IndexX)
+            for (u32 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
             {
                 v2 NewPoint = V2((real32)(OFFSET_X + (IndexX * TILE_SIZE)),
                                  (real32)(OFFSET_Y + (IndexY * TILE_SIZE)));
@@ -58,8 +65,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->PlayerPosition = V2(60, 60);
         GameState->DeltaPlayerPosition = V2(0, 0);
         
+        GameState->Player = {};
+        
+        
         Memory->IsInitialized = true;
     }
+    
+    // TODO(Eric): Move this back up after player init!
+    GameState->Player.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
+    ////GameState->Player.FrontP = GameState->Player.CenterP - V2(PLAYER_WIDTH*2,0);
+    GameState->Player.FacingDirectionAngle = 150;
+    
+    GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
+                                  RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     
     // Get Input from Controllers and Adjust player's movement
     for(int ControllerIndex = 0;
@@ -96,7 +114,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
         }
         
-        MovePlayer(GameState, Input->dtForFrame, ddP);
+        //MovePlayer(GameState, Input->dtForFrame, ddP);
     }
     
     //
@@ -104,9 +122,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     //
     ClearBackground(Render);
     RenderMap(Render, &GameState->Map);
-    
-    // Draw our sample player
-    RenderSquare(Render, GameState->PlayerPosition, V2(30,30), 0, 255, 255);
     
     // NOTE(Eric): Input.MouseX and Input.MouseY origin is the Top Left corner!
     // This doesn't match the coords of what render_buffer uses!
@@ -125,29 +140,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // TODO(Eric): Watch the HH episode about enforcing 60 fps
     // This will hopefully bring down the CPU use and will be useful
     // to set up our timings
-    
-    // Diagonal line proving that we are starting in the lower left
-    //RenderLine(Render, v2{0,0}, v2{(real32)Render->Width, (real32)Render->Height}, 3, 0,1,0);
-    
-    //RenderLine(Render, v2{0,0}, v2{60.0, 80.0}, 3, 0,1,0);
-    
-#if 1
-    // Check collision
-    // If Line.Point1 is within a Tile's area, draw a background rect of that Tile
-    v2 TestPoint = V2(360, 80);
-    tile Tile = GetTileAtPosition(&GameState->Map, TestPoint);
-    RenderSquare(Render, Tile.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
-    RenderSquare(Render, TestPoint, v2{3,3}, 0, 1, 0);
-    
-    v2 TestPoint2 = V2(403, 587);
-    tile Tile2 = GetTileAtPosition(&GameState->Map, TestPoint2);
-    RenderSquare(Render, Tile2.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
-    RenderSquare(Render, TestPoint2, v2{3,3}, 0, 1, 0);
-    
-    v2 TestPoint3 = V2(300, 405);
-    tile Tile3 = GetTileAtPosition(&GameState->Map, TestPoint3);
-    RenderSquare(Render, Tile3.BottomLeft, v2{TILE_SIZE, TILE_SIZE}, 0, 0, 1);
-    RenderSquare(Render, TestPoint3, v2{3,3}, 0, 1, 0);
     
     
 #if 0
@@ -169,68 +161,31 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     }
 #endif
     
-    v2 LineP1 = v2{50, 50};
-    v2 LineP2 = v2{180, 180};
-    v2 LineP3 = v2{750, 300};
     
     
-    RenderLine(Render, LineP1, LineP3, 1, 0, 0.5, 1);
-    RenderLine(Render, LineP1, LineP2, 1, 0, 1, 0);
-    RenderLine(Render, LineP2, LineP3, 1, 1, 1, 0);
-    RenderSquare(Render, LineP1, v2{5,5}, 1, 0, 0);
-    RenderSquare(Render, LineP3, v2{5,5}, 1, 0, 0);
-    RenderSquare(Render, LineP2, v2{5,5}, 1, 0, 0);
+    
+    // Crosshairs
+    RenderLine(Render,
+               V2(OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y),
+               V2(MAP_WIDTH+OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y), 1, .5,.5,.5);
+    
+    RenderLine(Render,
+               V2((MAP_WIDTH/2)+OFFSET_X, OFFSET_Y),
+               V2((MAP_WIDTH/2)+OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, .5,.5,.5);
     
     
-    // Blue triangle test
-    v2 T1 = v2{100, 160};
-    v2 T2 = v2{145, 100};
-    v2 T3 = v2{200, 255};
-    RenderLine(Render, T1, T2, 1, 0, 0.5, 1);
-    RenderLine(Render, T1, T3, 1, 0, 0.5, 1);
-    RenderLine(Render, T2, T3, 1, 0, 0.5, 1);
     
-    // Horizontal line test, scary red line
-    v2 horz1 = v2{300, 500};
-    v2 horz2 = v2{800, 500};
-    RenderLine(Render, horz1, horz2, 3, 1, 0, 0);
-    
-    // Down line test
-    v2 down1 = v2{50, 600};
-    v2 down2 = v2{510, 100};
-    RenderLine(Render, down1, down2, 2, 0.6, 0.6, 0.6);
-    RenderSquare(Render, down1, v2{5,5}, 1, 1, 1);
-    RenderSquare(Render, down2, v2{5,5}, 1, 1, 1);
-    
-    // Start from left line test (should swap points)
-    v2 left1 = v2{400, 400};
-    v2 left2 = v2{150, 225};
-    RenderLine(Render, left1, left2, 2, 0.5, 0.5, 0.5);
-    //#endif
+    RenderPlayer(Render, &GameState->Player, GameState->Map);
     
     
-    // We have our first player!
-    RenderPlayer(Render);
+    
+    real32 Q1 = ATan2(4,4);
+    real32 Q2 = ATan2(-4,4);
+    real32 Q3 = ATan2(-4,-4);
+    real32 Q4 = ATan2(4,-4);
     
     
-    RenderLine(Render, v2{50, 20}, v2{50, 400}, 2, 1, 1, 1);
     
-    
-    v2 Center = V2(600, 600);
-    real32 Radius = 40;
-    RenderCircle(Render, Center, Radius, 0, 1, 0);
-    
-    
-    v2 Center2 = V2(300, 200);
-    real32 Radius2 = 80;
-    RenderCircle(Render, Center2, Radius2, 0, 1, 0);
-    
-    v2 Center3 = V2(450, 520);
-    real32 Radius3 = 90;
-    RenderCircle(Render, Center3, Radius3, 1, 1, 0);
-    
-    
-#endif
 }
 
 
@@ -340,6 +295,34 @@ RenderCircle has also been broken
 changed this to Bresenham's circle algorithm and it's almost working
 
 
+
+
+*/
+
+/*
+
+Blog Post 4 (starting 3/24/2020):
+
+Cleaned up a couple of other things
+Removed all the old sample drawing things
+Changed draw grid to draw outlines instead (much more useful)
+Drawing crosshairs over grid to show center
+
+Changed RenderPlayer to take a player struct
+Changed RenderPlayer to draw using the points in the player struct
+Player initialization is setting the points for player
+
+realized that the player movement is always dependent on the FrontP
+and that FrontP is around a circle!
+
+- lots of testing, trying to get the top and bottom points of the player.. :(
+
+now show moreissues.png
+The pink square should be inside the blue square
+and our small circle is obviously off
+my first guess is a rounding error, maybe inside of rendersquare.
+that was correct! rendersquare_fix.png
+the change was to Round X and Y loop variables
 
 
 */

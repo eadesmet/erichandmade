@@ -35,31 +35,27 @@ ClearBackground(render_buffer *Render)
 }
 
 inline void
-RenderSquare(render_buffer* Render, v2 Pos, v2 Size, real32 R, real32 G, real32 B)
+RenderSquare(render_buffer* Render, v2 Pos, u32 Size, real32 R, real32 G, real32 B)
 {
-    // Draw a rectangle
-    // Our coordinate system is bottom-up
-    v2 Pos2 = Pos + Size;
+    // Draw a rectangle - Our coordinate system is bottom-up
+    Pos.x = Clamp(0.0f, Pos.x, (real32)Render->Width);
+    Pos.y = Clamp(0.0f, Pos.y, (real32)Render->Height);
     
-    Assert(Pos.x <= Render->Width);
-    Assert(Pos2.x <= Render->Width);
-    Assert(Pos.y <= Render->Height);
-    Assert(Pos2.y <= Render->Height);
+    v2 Pos2 = V2(Pos.x + Size, Pos.y + Size);
+    Pos2.x = Clamp(0.0f, Pos2.x, (real32)Render->Width);
+    Pos2.y = Clamp(0.0f, Pos2.y, (real32)Render->Height);
     
     u32 Color = ((RoundReal32ToUInt32(R * 255.0f) << 16) |
                  (RoundReal32ToUInt32(G * 255.0f) << 8) |
                  (RoundReal32ToUInt32(B * 255.0f) << 0));
     
 #if 1
-    for (real32 y = Pos.y; y < Pos2.y; y++)
+    for (int y = RoundReal32ToInt32(Pos.y); y < Pos2.y; ++y)
     {
-        u32* RectanglePixel = (u32*)Render->Pixels;
-        RectanglePixel += RoundReal32ToInt32(Pos.x);
-        RectanglePixel += RoundReal32ToInt32(y*Render->Width);
-        //real32* RectanglePixel = (real32 *)Render->Pixels + RoundReal32ToInt32(Pos.x) + RoundReal32ToInt32(y*Render->Width);
-        for (real32 x = Pos.x; x < Pos2.x; x++)
+        u32* RectanglePixel = (u32 *)Render->Pixels + RoundReal32ToInt32(Pos.x) + (y*Render->Width);
+        for (int x = RoundReal32ToInt32(Pos.x); x < Pos2.x; ++x)
         {
-            *RectanglePixel++ = Color;//(real32)Color;
+            *RectanglePixel++ = Color;
         }
     }
 #else
@@ -87,7 +83,7 @@ RenderSquare(render_buffer* Render, v2 Pos, v2 Size, real32 R, real32 G, real32 
 }
 
 inline void
-PlotLineLow(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, real32 G, real32 B)
+PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 G, real32 B)
 {
     real32 DeltaX = P2.x - P1.x;
     real32 DeltaY = P2.y - P1.y;
@@ -104,7 +100,7 @@ PlotLineLow(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, rea
     
     for (real32 x = P1.x; x < P2.x; ++x)
     {
-        RenderSquare(Render, V2(x, y), V2(Thickness,Thickness), R, G, B);
+        RenderSquare(Render, V2(x, y), Thickness, R, G, B);
         if (Delta > 0)
         {
             y += yi;
@@ -115,7 +111,7 @@ PlotLineLow(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, rea
 }
 
 inline void
-PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, real32 G, real32 B)
+PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 G, real32 B)
 {
     real32 DeltaX = P2.x - P1.x;
     real32 DeltaY = P2.y - P1.y;
@@ -132,7 +128,7 @@ PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, re
     
     for (real32 y = P1.y; y < P2.y; ++y)
     {
-        RenderSquare(Render, V2(x, y), V2(Thickness,Thickness), R, G, B);
+        RenderSquare(Render, V2(x, y), Thickness, R, G, B);
         if (Delta > 0)
         {
             x+= xi;
@@ -144,17 +140,21 @@ PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, re
 }
 
 inline void
-RenderLine(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, real32 G, real32 B)
+RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 G, real32 B)
 {
     // y = mx + b
     // m = slope of the line
     // m = y2 - y1 / x2 - x1;
     // b = y intercept : where on the y axis the line intercepts
     
+    // NOTE(Eric): The RenderSquare is checking bounds
+    // We don't have to check it every step of the way
+#if 0
     Assert(P1.x <= Render->Width);
     Assert(P2.x <= Render->Width);
     Assert(P1.y <= Render->Height);
     Assert(P2.y <= Render->Height);
+#endif
     
     if (AbsoluteValue(P2.y - P1.y) < AbsoluteValue(P2.x - P1.x))
     {
@@ -182,7 +182,7 @@ RenderLine(render_buffer* Render, v2 P1, v2 P2, real32 Thickness, real32 R, real
 }
 
 inline void
-RenderCircle(render_buffer* Render, v2 Center, real32 Radius, real32 R, real32 G, real32 B)
+RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, real32 R, real32 G, real32 B)
 {
     // X = Radius * cos(Angle * PI/180)
     // Y = Radius * sin(Angle * PI/180)
@@ -206,32 +206,127 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, real32 R, real32 G
             y = y - 1;
             DecisionParameter = DecisionParameter + 4 * (x - y) + 10;
         }
-        
+        // NOTE(Eric): I could potentially fill in the circle by drawing lines between these points
         // Octant 1
-        RenderSquare(Render, V2(Center.x + x, Center.y + y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x + x, Center.y + y), Thickness, R, G, B);
         // Octant 2
-        RenderSquare(Render, V2(Center.x + y, Center.y + x), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x + y, Center.y + x), Thickness, R, G, B);
         // Octant 3
-        RenderSquare(Render, V2(Center.x + y, Center.y - x), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x + y, Center.y - x), Thickness, R, G, B);
         // Octant 4
-        RenderSquare(Render, V2(Center.x + x, Center.y - y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x + x, Center.y - y), Thickness, R, G, B);
         // Octant 5
-        RenderSquare(Render, V2(Center.x - x, Center.y - y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x - x, Center.y - y), Thickness, R, G, B);
         // Octant 6
-        RenderSquare(Render, V2(Center.x - y, Center.y - x), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x - y, Center.y - x), Thickness, R, G, B);
         // Octant 7
-        RenderSquare(Render, V2(Center.x - y, Center.y + x), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x - y, Center.y + x), Thickness, R, G, B);
         // Octant 8
-        RenderSquare(Render, V2(Center.x - x, Center.y + y), V2(1,1), R, G, B);
+        RenderSquare(Render, V2(Center.x - x, Center.y + y), Thickness, R, G, B);
     }
     
     // Center point
-    RenderSquare(Render, Center, V2(2,2), 0, 1, 0);
+    //RenderSquare(Render, Center, V2(2,2), 0, 1, 0);
 }
 
 inline void
-RenderPlayer(render_buffer* Render)
+RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 {
+    // NOTE(Eric): This only works for initial drawing
+    
+    // For initial draw, Top and Bottom X are the SAME
+    // but ONLY for the FrontP on the Left or Right of Center
+    
+    // I'll have to check all 8 (4?) possiblities between CenterP and FrontP
+    // (+x, +y), (+x, -y), (-x, +y), (-x, -y),
+    
+    // Circle of FrontP
+    RenderCircle(Render, Player->CenterP,
+                 SquareRoot(Square(Player->CenterP.x - Player->FrontP.x) + Square(Player->CenterP.y - Player->FrontP.y)),
+                 1,
+                 0,1,0);
+    
+    
+    // If we pretend the Center point is the Origin (0,0)
+    // and the FrontP is a point in relation to the Center
+    // ATan2 will give us the radians, which we can converto to degrees
+    
+    v2 Center = Player->CenterP;
+    v2 Front = Player->FrontP;
+    v2 RelationToOrigin = {};
+    
+    // 'Test' here is the Front translated with Center being the origin
+    RelationToOrigin = Front - Center;
+    RelationToOrigin *= .5;
+    v2 CenterBack = (Center - RelationToOrigin);
+    RenderSquare(Render, CenterBack, 3, 1,1,1);
+    
+    
+    
+    
+    // TODO(Eric): Only Quadrant 4 is incorrect, I think because of the adding/subtracting?
+    
+    real32 OppositeAngle;
+    real32 OppositeAngleTop;
+    real32 OppositeAngleBottom;
+    if (Player->FacingDirectionAngle > 180)
+    {
+        OppositeAngle = Player->FacingDirectionAngle - 180;
+        OppositeAngleTop = OppositeAngle + 40;
+        if (OppositeAngle <= 40)
+            OppositeAngleBottom = 360 - (40 - OppositeAngle);
+        else
+            OppositeAngleBottom = OppositeAngle - 40;
+    }
+    else
+    {
+        OppositeAngle = Player->FacingDirectionAngle + 180;
+        OppositeAngleTop = OppositeAngle - 40;
+        if (OppositeAngle >= 320)
+            OppositeAngleBottom = 360 - OppositeAngle + 40;
+        else
+            OppositeAngleBottom = OppositeAngle + 40;
+    }
+    
+    v2 Top = V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
+                RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleTop * Pi32/180)))
+        + Center;
+    
+    v2 Bottom = V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleBottom * Pi32/180)),
+                   RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
+        + Center;
+    
+    
+    
+    // The three angles of a triangle add up to 180
+    
+    // given 90 degrees, and 45 degrees, the other is also 45
+    
+    
+    
+    
+    
+    
+    v2 PlayerTopP = {};
+    v2 PlayerBottomP = {};
+#if 0
+    PlayerTopP.x = Player->FrontP.x + AbsoluteValue(Player->FrontP.x - Player->CenterP.x) + (PLAYER_WIDTH/2);
+    PlayerTopP.y = Player->FrontP.y + (PLAYER_WIDTH / 2);
+    
+    PlayerBottomP.x = Player->FrontP.x + AbsoluteValue(Player->FrontP.x - Player->CenterP.x) + (PLAYER_WIDTH/2);
+    PlayerBottomP.y = Player->FrontP.y - (PLAYER_WIDTH / 2);
+#else
+    PlayerTopP = Top;
+    PlayerBottomP = Bottom;
+#endif
+    RenderLine(Render, Player->FrontP, PlayerTopP, 1, 0.8, 0.8, 0.8);
+    RenderLine(Render, Player->FrontP, PlayerBottomP, 1, 0.8, 0.8, 0.8);
+    RenderLine(Render, PlayerBottomP, PlayerTopP, 1, 0.8, 0.8, 0.8);
+    
+    // Center point
+    RenderSquare(Render, Player->CenterP, 2, 0,1,0);
+    
+#if 0
     real32 CenterX = (real32)(Render->Width / 2);
     real32 CenterY = (real32)(Render-> Height / 2);
     
@@ -242,16 +337,32 @@ RenderPlayer(render_buffer* Render)
     RenderLine(Render, P1, P2, 1, 0.8, 0.8, 0.8);
     RenderLine(Render, P1, P3, 1, 0.8, 0.8, 0.8);
     RenderLine(Render, P2, P3, 1, 0.8, 0.8, 0.8);
+#endif
 }
 
 inline void
 RenderMap(render_buffer* Render, screen_map *Map)
 {
-    for (u32 IndexY = 0; IndexY <= TILE_COUNT_Y; ++IndexY)
+    for (u32 IndexY = 0; IndexY < TILE_COUNT_Y; ++IndexY)
     {
-        for (u32 IndexX = 0; IndexX <= TILE_COUNT_X; ++IndexX)
+        for (u32 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
         {
-            RenderSquare(Render, Map->Tiles[IndexY][IndexX].BottomLeft, v2{2,2}, 1, 0, 0);
+            //RenderSquare(Render, Map->Tiles[IndexY][IndexX].BottomLeft, v2{2,2}, 1, 1, 0);
+            
+            // NOTE(Eric): Render Outline of a Square - Could be a handy function to have
+            v2 BottomLeft = Map->Tiles[IndexY][IndexX].BottomLeft;
+            RenderLine(Render, BottomLeft,
+                       V2(BottomLeft.x, BottomLeft.y+TILE_SIZE),
+                       1, .2,.2,.2);
+            RenderLine(Render, BottomLeft,
+                       V2(BottomLeft.x+TILE_SIZE, BottomLeft.y),
+                       1, .2,.2,.2);
+            RenderLine(Render, V2(BottomLeft.x,BottomLeft.y+TILE_SIZE),
+                       V2(BottomLeft.x+TILE_SIZE, BottomLeft.y+TILE_SIZE),
+                       1, .2,.2,.2);
+            RenderLine(Render, V2(BottomLeft.x+TILE_SIZE,BottomLeft.y),
+                       V2(BottomLeft.x+TILE_SIZE, BottomLeft.y+TILE_SIZE),
+                       1, .2,.2,.2);
         }
     }
 }
