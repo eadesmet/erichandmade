@@ -74,7 +74,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // TODO(Eric): Move this back up after player init!
     GameState->Player.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
     ////GameState->Player.FrontP = GameState->Player.CenterP - V2(PLAYER_WIDTH*2,0);
-    GameState->Player.FacingDirectionAngle = 150;
+    GameState->Player.FacingDirectionAngle = 170;
     
     GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                                   RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;

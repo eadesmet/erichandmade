@@ -265,7 +265,7 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
     
     
     // TODO(Eric): Only Quadrant 4 is incorrect, I think because of the adding/subtracting?
-    
+    // Only 140-170 is wrong??
     real32 OppositeAngle;
     real32 OppositeAngleTop;
     real32 OppositeAngleBottom;
