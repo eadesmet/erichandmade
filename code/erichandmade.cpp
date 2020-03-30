@@ -66,18 +66,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->DeltaPlayerPosition = V2(0, 0);
         
         GameState->Player = {};
+        GameState->Player.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
+        ////GameState->Player.FrontP = GameState->Player.CenterP - V2(PLAYER_WIDTH*2,0);
+        GameState->Player.FacingDirectionAngle = 85;
         
+        GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
+                                      RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
         
         Memory->IsInitialized = true;
     }
     
-    // TODO(Eric): Move this back up after player init!
-    GameState->Player.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
-    ////GameState->Player.FrontP = GameState->Player.CenterP - V2(PLAYER_WIDTH*2,0);
-    GameState->Player.FacingDirectionAngle = 170;
-    
-    GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
-                                  RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     
     // Get Input from Controllers and Adjust player's movement
     for(int ControllerIndex = 0;
@@ -95,26 +93,33 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         }
         else
         {
+            // TODO(Eric): Handle movement when the button is held down
             // NOTE(casey): Use digital movement tuning
             if(Controller->MoveUp.EndedDown)
             {
+                GameState->Player.FacingDirectionAngle -= 5;
                 ddP.y = 1.0f;
             }
             if(Controller->MoveDown.EndedDown)
             {
+                GameState->Player.FacingDirectionAngle += 5;
                 ddP.y = -1.0f;
             }
             if(Controller->MoveLeft.EndedDown)
             {
+                GameState->Player.FacingDirectionAngle += 5;
                 ddP.x = -1.0f;
             }
             if(Controller->MoveRight.EndedDown)
             {
+                GameState->Player.FacingDirectionAngle -= 5;
                 ddP.x = 1.0f;
             }
         }
         
         //MovePlayer(GameState, Input->dtForFrame, ddP);
+        GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
+                                      RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     }
     
     //
@@ -324,9 +329,29 @@ my first guess is a rounding error, maybe inside of rendersquare.
 that was correct! rendersquare_fix.png
 the change was to Round X and Y loop variables
 
+we are getting close - the player works for pretty much every angle except 140-180
+this likely has to do with if OppositeAngle >= 320
+I was adjusting Bottom for both cases, when the first is Bottom and second is Top
+that fixed it
+[firstplayermovement.gif]
+
+
+Work on something first, until you get stuck, _then_ read about _that specific problem_
+this gives you context
+otherwise, reading something where you don't know anything, it could be good or bad..
+
 
 */
 
+/*
+Just a couple ideas:
+
+We could add a screen shake to the game fairly easily
+all we'd need to do is adjust the offset x and y randomly
+would put these in gamestate
+
+
+*/
 
 /*
 

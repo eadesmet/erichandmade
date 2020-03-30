@@ -232,14 +232,6 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, rea
 inline void
 RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 {
-    // NOTE(Eric): This only works for initial drawing
-    
-    // For initial draw, Top and Bottom X are the SAME
-    // but ONLY for the FrontP on the Left or Right of Center
-    
-    // I'll have to check all 8 (4?) possiblities between CenterP and FrontP
-    // (+x, +y), (+x, -y), (-x, +y), (-x, -y),
-    
     // Circle of FrontP
     RenderCircle(Render, Player->CenterP,
                  SquareRoot(Square(Player->CenterP.x - Player->FrontP.x) + Square(Player->CenterP.y - Player->FrontP.y)),
@@ -249,23 +241,18 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
     
     // If we pretend the Center point is the Origin (0,0)
     // and the FrontP is a point in relation to the Center
-    // ATan2 will give us the radians, which we can converto to degrees
+    // ATan2 will give us the radians, which we can convert to degrees
     
     v2 Center = Player->CenterP;
     v2 Front = Player->FrontP;
-    v2 RelationToOrigin = {};
     
-    // 'Test' here is the Front translated with Center being the origin
+    v2 RelationToOrigin = {};
     RelationToOrigin = Front - Center;
     RelationToOrigin *= .5;
+    
     v2 CenterBack = (Center - RelationToOrigin);
     RenderSquare(Render, CenterBack, 3, 1,1,1);
     
-    
-    
-    
-    // TODO(Eric): Only Quadrant 4 is incorrect, I think because of the adding/subtracting?
-    // Only 140-170 is wrong??
     real32 OppositeAngle;
     real32 OppositeAngleTop;
     real32 OppositeAngleBottom;
@@ -281,11 +268,11 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
     else
     {
         OppositeAngle = Player->FacingDirectionAngle + 180;
-        OppositeAngleTop = OppositeAngle - 40;
+        OppositeAngleBottom = OppositeAngle - 40;
         if (OppositeAngle >= 320)
-            OppositeAngleBottom = 360 - OppositeAngle + 40;
+            OppositeAngleTop = 360 - (OppositeAngle + 40);
         else
-            OppositeAngleBottom = OppositeAngle + 40;
+            OppositeAngleTop = OppositeAngle + 40;
     }
     
     v2 Top = V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
@@ -296,48 +283,22 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
                    RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
         + Center;
     
-    
-    
-    // The three angles of a triangle add up to 180
-    
-    // given 90 degrees, and 45 degrees, the other is also 45
-    
-    
-    
-    
+    // Circle of points where Top and Bottom should lie
+    RenderCircle(Render, Center, PLAYER_HALFWIDTH, 1, 0,0.5,1);
     
     
     v2 PlayerTopP = {};
     v2 PlayerBottomP = {};
-#if 0
-    PlayerTopP.x = Player->FrontP.x + AbsoluteValue(Player->FrontP.x - Player->CenterP.x) + (PLAYER_WIDTH/2);
-    PlayerTopP.y = Player->FrontP.y + (PLAYER_WIDTH / 2);
     
-    PlayerBottomP.x = Player->FrontP.x + AbsoluteValue(Player->FrontP.x - Player->CenterP.x) + (PLAYER_WIDTH/2);
-    PlayerBottomP.y = Player->FrontP.y - (PLAYER_WIDTH / 2);
-#else
     PlayerTopP = Top;
     PlayerBottomP = Bottom;
-#endif
+    
     RenderLine(Render, Player->FrontP, PlayerTopP, 1, 0.8, 0.8, 0.8);
     RenderLine(Render, Player->FrontP, PlayerBottomP, 1, 0.8, 0.8, 0.8);
     RenderLine(Render, PlayerBottomP, PlayerTopP, 1, 0.8, 0.8, 0.8);
     
     // Center point
     RenderSquare(Render, Player->CenterP, 2, 0,1,0);
-    
-#if 0
-    real32 CenterX = (real32)(Render->Width / 2);
-    real32 CenterY = (real32)(Render-> Height / 2);
-    
-    v2 P1 = v2{CenterX, CenterY};
-    v2 P2 = v2{CenterX, CenterY + 20};
-    v2 P3 = v2{CenterX + 40, CenterY + 10};
-    
-    RenderLine(Render, P1, P2, 1, 0.8, 0.8, 0.8);
-    RenderLine(Render, P1, P3, 1, 0.8, 0.8, 0.8);
-    RenderLine(Render, P2, P3, 1, 0.8, 0.8, 0.8);
-#endif
 }
 
 inline void
