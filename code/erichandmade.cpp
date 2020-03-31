@@ -3,6 +3,41 @@
 #include "tile.cpp"
 #include "render.cpp"
 
+//~ NOTE(Eric): Init functions
+internal player
+InitPlayer(game_state *GameState)
+{
+    player Result = {};
+    Result.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
+    Result.FacingDirectionAngle = 180;
+    Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
+                       RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
+    
+    return(Result);
+}
+
+internal asteroid
+InitAsteroid(game_state *GameState)
+{
+    asteroid Result = {};
+    
+    // TODO(Eric): Randomize all positions!
+    
+    Result.CenterP = V2(600, 600);
+    Result.Radius = ASTEROID_SMALL_R;
+    Result.State = ASTEROIDSTATE_ACTIVE;
+    Result.Speed = ASTEROIDSPEED_SLOW;
+    
+    Result.StartP = Result.CenterP;
+    v2 CenterMap = V2(MAP_WIDTH/2, MAP_HEIGHT/2);
+    Result.EndP = CenterMap;// - (Result.StartP - CenterMap);
+    
+    return(Result);
+}
+
+//~ NOTE(Eric): Unused Player Movement code
+// Might need some of these formulas for Asteroids moving on the screen
+#if 0
 internal void
 MovePlayer(game_state *GameState, real32 dt, v2 ddP)
 {
@@ -36,6 +71,21 @@ MovePlayer(game_state *GameState, real32 dt, v2 ddP)
     
     // TODO(Eric): Collition With Player here!
 }
+#endif
+
+internal void
+MoveAsteroid(asteroid *Asteroid, real32 dt)
+{
+    // The goal of this function is just to change the CenterP by a certain amount
+    // that is along the line of StartP -> EndP
+    
+    // Direction == Slope
+    real32 Direction = ((Asteroid->EndP.y - Asteroid->StartP.y) /
+                        AbsoluteValue(Asteroid->EndP.x - Asteroid->StartP.x));
+    Asteroid->CenterP.x += (Direction * (dt * Asteroid->Speed));
+    Asteroid->CenterP.y += (Direction * (dt * Asteroid->Speed));
+}
+
 
 //~NOTE(Eric): Game Update and Render
 
@@ -62,16 +112,22 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
         }
         
-        GameState->PlayerPosition = V2(60, 60);
-        GameState->DeltaPlayerPosition = V2(0, 0);
+        // Init Player
+        GameState->Player = InitPlayer(GameState);
         
-        GameState->Player = {};
-        GameState->Player.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
-        ////GameState->Player.FrontP = GameState->Player.CenterP - V2(PLAYER_WIDTH*2,0);
-        GameState->Player.FacingDirectionAngle = 85;
         
-        GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
-                                      RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
+        
+        
+        // Init Asteroids
+#if 0
+        for(int AsteroidIndex = 0;
+            AsteroidIndex < ArrayCount(GameState->Asteroids);
+            ++AsteroidIndex)
+        {
+            asteroid Asteroid = GameState->Asteroids[AsteroidIndex];
+        }
+#endif
+        GameState->Asteroids[0] = InitAsteroid(GameState);
         
         Memory->IsInitialized = true;
     }
@@ -94,6 +150,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         else
         {
             // TODO(Eric): Handle movement when the button is held down
+            // Maybe we can add IsDown to the game_input_state?
             // NOTE(casey): Use digital movement tuning
             if(Controller->MoveUp.EndedDown)
             {
@@ -122,6 +179,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                                       RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     }
     
+    // NOTE(Eric): Single for now, either loop here or change to MoveAsteroids
+    MoveAsteroid(&GameState->Asteroids[0], Input->dtForFrame);
+    
     //
     // NOTE(Eric): Render
     //
@@ -131,20 +191,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // NOTE(Eric): Input.MouseX and Input.MouseY origin is the Top Left corner!
     // This doesn't match the coords of what render_buffer uses!
     
-    // TODO(Eric): Next I think I will create Entities, so I can start trying out collision detection
-    
-    // TODO(Eric): It would be desirable to have each Entity have a single Position
-    // Instead of having to think of moving all of the points around.
-    
     // NOTE(Eric): Movement is essentially:
     // Getting the old position
     // Calculating their 'speed' based on dtForFrame
     // Setting their new position: old position + speed
-    
-    
-    // TODO(Eric): Watch the HH episode about enforcing 60 fps
-    // This will hopefully bring down the CPU use and will be useful
-    // to set up our timings
     
     
 #if 0
@@ -170,24 +220,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     
     
     // Crosshairs
+    v3 CrosshairColor = V3(0.5,0.5,0.5);
     RenderLine(Render,
                V2(OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y),
-               V2(MAP_WIDTH+OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y), 1, .5,.5,.5);
+               V2(MAP_WIDTH+OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y), 1, CrosshairColor);
     
     RenderLine(Render,
                V2((MAP_WIDTH/2)+OFFSET_X, OFFSET_Y),
-               V2((MAP_WIDTH/2)+OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, .5,.5,.5);
+               V2((MAP_WIDTH/2)+OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
     
     
     
     RenderPlayer(Render, &GameState->Player, GameState->Map);
     
-    
-    
-    real32 Q1 = ATan2(4,4);
-    real32 Q2 = ATan2(-4,4);
-    real32 Q3 = ATan2(-4,-4);
-    real32 Q4 = ATan2(4,-4);
+    // NOTE(Eric): Single for now, either loop here or change to RenderAsteroids
+    RenderAsteroid(Render, &GameState->Asteroids[0]);
     
     
     
@@ -364,5 +411,43 @@ Straight up casting a float to an integer TRUNCATES the number: 1.89 -> 1.0
 
 Remember there are steps to moving things..
 It all has to be calculated up front, and then rendered with the new calculated positions.
+
+*/
+
+
+//~ TODO LIST
+/*
+
+Change rendering to be mapped only to the Map
+     - I think essentially what I have to do here..
+- To say that OFFSET_X and OFFSET_Y is my new 0,0
+- and that MAP_WIDTH + OFFSET_X is my new Max Width
+- and that MAP_HEIGHT + OFFSET_Y is my new Max Height
+
+-- The functionality we want out of this, is asteroids to be half drawn as they come in to the map
+
+Asteroid Movement
+- Going to have a random starting position and an end position(across from start, nearly crossing player)
+- Random speed (set asteroid speeds, slow, med, fast?)
+
+
+Asteroid Destroying
+- first run can just be not rendering the asteroid anymore (changing it's state)
+
+Collision detection
+- Player and Asteroid (game over)
+- Asteroid and Asteroid (bounce slightly?)
+
+
+
+Improve player movement
+- Holding down the button continuosluyouyyyy moves
+
+Player shooting
+
+
+
+
+
 
 */

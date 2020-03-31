@@ -18,8 +18,8 @@ typedef uint64_t u64;
 typedef float real32;
 typedef double real64;
 
-#define internal static 
-#define local_persist static 
+#define internal static
+#define local_persist static
 #define global_variable static
 
 #define Pi32 3.14159265359f
@@ -71,7 +71,7 @@ typedef struct game_button_state
 typedef struct game_controller_input
 {
     bool32 IsConnected;
-    bool32 IsAnalog;    
+    bool32 IsAnalog;
     real32 StickAverageX;
     real32 StickAverageY;
     
@@ -116,13 +116,11 @@ typedef struct game_input
 
 
 
-// TODO(ERIC): Rename "Render", actually pass in something else probably
-// TODO(ERIC): Pass in user Input, set up games Memory and Buffers
 #define GAME_UPDATE_AND_RENDER(name) void name(render_buffer *Render, game_memory *Memory, game_input *Input)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
 
 
-inline game_controller_input 
+inline game_controller_input
 *GetController(game_input *Input, int unsigned ControllerIndex)
 {
     Assert(ControllerIndex < ArrayCount(Input->Controllers));

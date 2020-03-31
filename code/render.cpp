@@ -35,7 +35,7 @@ ClearBackground(render_buffer *Render)
 }
 
 inline void
-RenderSquare(render_buffer* Render, v2 Pos, u32 Size, real32 R, real32 G, real32 B)
+RenderSquare(render_buffer* Render, v2 Pos, u32 Size, v3 Color)
 {
     // Draw a rectangle - Our coordinate system is bottom-up
     Pos.x = Clamp(0.0f, Pos.x, (real32)Render->Width);
@@ -45,9 +45,7 @@ RenderSquare(render_buffer* Render, v2 Pos, u32 Size, real32 R, real32 G, real32
     Pos2.x = Clamp(0.0f, Pos2.x, (real32)Render->Width);
     Pos2.y = Clamp(0.0f, Pos2.y, (real32)Render->Height);
     
-    u32 Color = ((RoundReal32ToUInt32(R * 255.0f) << 16) |
-                 (RoundReal32ToUInt32(G * 255.0f) << 8) |
-                 (RoundReal32ToUInt32(B * 255.0f) << 0));
+    u32 ColorValue = GetColor(Color);
     
 #if 1
     for (int y = RoundReal32ToInt32(Pos.y); y < Pos2.y; ++y)
@@ -55,7 +53,7 @@ RenderSquare(render_buffer* Render, v2 Pos, u32 Size, real32 R, real32 G, real32
         u32* RectanglePixel = (u32 *)Render->Pixels + RoundReal32ToInt32(Pos.x) + (y*Render->Width);
         for (int x = RoundReal32ToInt32(Pos.x); x < Pos2.x; ++x)
         {
-            *RectanglePixel++ = Color;
+            *RectanglePixel++ = ColorValue;
         }
     }
 #else
@@ -83,7 +81,7 @@ RenderSquare(render_buffer* Render, v2 Pos, u32 Size, real32 R, real32 G, real32
 }
 
 inline void
-PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 G, real32 B)
+PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
     real32 DeltaX = P2.x - P1.x;
     real32 DeltaY = P2.y - P1.y;
@@ -100,7 +98,7 @@ PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32
     
     for (real32 x = P1.x; x < P2.x; ++x)
     {
-        RenderSquare(Render, V2(x, y), Thickness, R, G, B);
+        RenderSquare(Render, V2(x, y), Thickness, Color);
         if (Delta > 0)
         {
             y += yi;
@@ -111,7 +109,7 @@ PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32
 }
 
 inline void
-PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 G, real32 B)
+PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
     real32 DeltaX = P2.x - P1.x;
     real32 DeltaY = P2.y - P1.y;
@@ -128,7 +126,7 @@ PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real3
     
     for (real32 y = P1.y; y < P2.y; ++y)
     {
-        RenderSquare(Render, V2(x, y), Thickness, R, G, B);
+        RenderSquare(Render, V2(x, y), Thickness, Color);
         if (Delta > 0)
         {
             x+= xi;
@@ -140,7 +138,7 @@ PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real3
 }
 
 inline void
-RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 G, real32 B)
+RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
     // y = mx + b
     // m = slope of the line
@@ -160,29 +158,29 @@ RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, real32 R, real32 
     {
         if (P1.x > P2.x)
         {
-            PlotLineLow(Render, P2, P1, Thickness, R, G, B);
+            PlotLineLow(Render, P2, P1, Thickness, Color);
         }
         else
         {
-            PlotLineLow(Render, P1, P2, Thickness, R, G, B);
+            PlotLineLow(Render, P1, P2, Thickness, Color);
         }
     }
     else
     {
         if (P1.y > P2.y)
         {
-            PlotLineHigh(Render, P2, P1, Thickness, R, G, B);
+            PlotLineHigh(Render, P2, P1, Thickness, Color);
         }
         else
         {
-            PlotLineHigh(Render, P1, P2, Thickness, R, G, B);
+            PlotLineHigh(Render, P1, P2, Thickness, Color);
         }
     }
     
 }
 
 inline void
-RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, real32 R, real32 G, real32 B)
+RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 Color)
 {
     // X = Radius * cos(Angle * PI/180)
     // Y = Radius * sin(Angle * PI/180)
@@ -208,21 +206,21 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, rea
         }
         // NOTE(Eric): I could potentially fill in the circle by drawing lines between these points
         // Octant 1
-        RenderSquare(Render, V2(Center.x + x, Center.y + y), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x + x, Center.y + y), Thickness, Color);
         // Octant 2
-        RenderSquare(Render, V2(Center.x + y, Center.y + x), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x + y, Center.y + x), Thickness, Color);
         // Octant 3
-        RenderSquare(Render, V2(Center.x + y, Center.y - x), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x + y, Center.y - x), Thickness, Color);
         // Octant 4
-        RenderSquare(Render, V2(Center.x + x, Center.y - y), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x + x, Center.y - y), Thickness, Color);
         // Octant 5
-        RenderSquare(Render, V2(Center.x - x, Center.y - y), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x - x, Center.y - y), Thickness, Color);
         // Octant 6
-        RenderSquare(Render, V2(Center.x - y, Center.y - x), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x - y, Center.y - x), Thickness, Color);
         // Octant 7
-        RenderSquare(Render, V2(Center.x - y, Center.y + x), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x - y, Center.y + x), Thickness, Color);
         // Octant 8
-        RenderSquare(Render, V2(Center.x - x, Center.y + y), Thickness, R, G, B);
+        RenderSquare(Render, V2(Center.x - x, Center.y + y), Thickness, Color);
     }
     
     // Center point
@@ -232,26 +230,8 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, rea
 inline void
 RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 {
-    // Circle of FrontP
-    RenderCircle(Render, Player->CenterP,
-                 SquareRoot(Square(Player->CenterP.x - Player->FrontP.x) + Square(Player->CenterP.y - Player->FrontP.y)),
-                 1,
-                 0,1,0);
-    
-    
-    // If we pretend the Center point is the Origin (0,0)
-    // and the FrontP is a point in relation to the Center
-    // ATan2 will give us the radians, which we can convert to degrees
-    
     v2 Center = Player->CenterP;
     v2 Front = Player->FrontP;
-    
-    v2 RelationToOrigin = {};
-    RelationToOrigin = Front - Center;
-    RelationToOrigin *= .5;
-    
-    v2 CenterBack = (Center - RelationToOrigin);
-    RenderSquare(Render, CenterBack, 3, 1,1,1);
     
     real32 OppositeAngle;
     real32 OppositeAngleTop;
@@ -270,40 +250,61 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
         OppositeAngle = Player->FacingDirectionAngle + 180;
         OppositeAngleBottom = OppositeAngle - 40;
         if (OppositeAngle >= 320)
-            OppositeAngleTop = 360 - (OppositeAngle + 40);
+            OppositeAngleTop = (OppositeAngle + 40) - 360;
         else
             OppositeAngleTop = OppositeAngle + 40;
     }
     
-    v2 Top = V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
-                RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleTop * Pi32/180)))
-        + Center;
+    v2 PlayerTopP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
+                        RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleTop * Pi32/180)))
+                     + Center);
     
-    v2 Bottom = V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleBottom * Pi32/180)),
-                   RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
-        + Center;
+    v2 PlayerBottomP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleBottom * Pi32/180)),
+                           RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
+                        + Center);
+    
+    v3 PlayerColor = V3(0.8, 0.8, 0.8);
+    
+    RenderLine(Render, Player->FrontP, PlayerTopP, 1, PlayerColor);
+    RenderLine(Render, Player->FrontP, PlayerBottomP, 1, PlayerColor);
+    RenderLine(Render, PlayerBottomP, PlayerTopP, 1, PlayerColor);
+    
+#if 0
+    // Center point
+    RenderSquare(Render, Player->CenterP, 2, V3(0,1,0));
+    
+    // CenterBack point
+    v2 RelationToOrigin = {};
+    RelationToOrigin = Front - Center;
+    RelationToOrigin *= .5;
+    v2 CenterBack = (Center - RelationToOrigin);
+    RenderSquare(Render, CenterBack, 3, V3(1,1,1));
+    
+    // Circle of FrontP
+    RenderCircle(Render, Player->CenterP,
+                 SquareRoot(Square(Player->CenterP.x - Player->FrontP.x) + Square(Player->CenterP.y - Player->FrontP.y)),
+                 1,
+                 V3(0,1,0));
     
     // Circle of points where Top and Bottom should lie
-    RenderCircle(Render, Center, PLAYER_HALFWIDTH, 1, 0,0.5,1);
-    
-    
-    v2 PlayerTopP = {};
-    v2 PlayerBottomP = {};
-    
-    PlayerTopP = Top;
-    PlayerBottomP = Bottom;
-    
-    RenderLine(Render, Player->FrontP, PlayerTopP, 1, 0.8, 0.8, 0.8);
-    RenderLine(Render, Player->FrontP, PlayerBottomP, 1, 0.8, 0.8, 0.8);
-    RenderLine(Render, PlayerBottomP, PlayerTopP, 1, 0.8, 0.8, 0.8);
-    
-    // Center point
-    RenderSquare(Render, Player->CenterP, 2, 0,1,0);
+    RenderCircle(Render, Center, PLAYER_HALFWIDTH, 1, V3(0,0.5,1));
+#endif
+}
+
+inline void
+RenderAsteroid(render_buffer* Render, asteroid* Asteroid)
+{
+    v3 AsteroidColor = V3(1,0,0);
+    if (Asteroid->State != ASTEROIDSTATE_INACTIVE)
+    {
+        RenderCircle(Render, Asteroid->CenterP, Asteroid->Radius, 1, AsteroidColor);
+    }
 }
 
 inline void
 RenderMap(render_buffer* Render, screen_map *Map)
 {
+    v3 MapGridColor = V3(0.2,0.2,0.2);
     for (u32 IndexY = 0; IndexY < TILE_COUNT_Y; ++IndexY)
     {
         for (u32 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
@@ -314,16 +315,16 @@ RenderMap(render_buffer* Render, screen_map *Map)
             v2 BottomLeft = Map->Tiles[IndexY][IndexX].BottomLeft;
             RenderLine(Render, BottomLeft,
                        V2(BottomLeft.x, BottomLeft.y+TILE_SIZE),
-                       1, .2,.2,.2);
+                       1, MapGridColor);
             RenderLine(Render, BottomLeft,
                        V2(BottomLeft.x+TILE_SIZE, BottomLeft.y),
-                       1, .2,.2,.2);
+                       1, MapGridColor);
             RenderLine(Render, V2(BottomLeft.x,BottomLeft.y+TILE_SIZE),
                        V2(BottomLeft.x+TILE_SIZE, BottomLeft.y+TILE_SIZE),
-                       1, .2,.2,.2);
+                       1, MapGridColor);
             RenderLine(Render, V2(BottomLeft.x+TILE_SIZE,BottomLeft.y),
                        V2(BottomLeft.x+TILE_SIZE, BottomLeft.y+TILE_SIZE),
-                       1, .2,.2,.2);
+                       1, MapGridColor);
         }
     }
 }

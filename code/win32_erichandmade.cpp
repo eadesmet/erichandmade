@@ -127,7 +127,7 @@ Win32GetWindowDimension(HWND Window)
     return(Result);
 }
 
-// Input, Recording
+//~ Input, Recording
 internal void
 Win32ProcessKeyboardMessage(game_button_state *NewState, bool32 IsDown)
 {

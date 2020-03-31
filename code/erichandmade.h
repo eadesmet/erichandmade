@@ -25,15 +25,39 @@ struct player
     real32 FacingDirectionAngle;
 };
 
+enum asteroid_state
+{
+    ASTEROIDSTATE_INACTIVE = 0x0,
+    ASTEROIDSTATE_ACTIVE = 0x1,
+};
+
+// Asteroid Sized (Radius)
+#define ASTEROID_SMALL_R 20
+#define ASTEROID_MEDIUM_R 40
+#define ASTEROID_LARGE_R 80
+
+// Asteroid Speed
+#define ASTEROIDSPEED_SLOW 4;
+
+struct asteroid
+{
+    v2 CenterP;
+    real32 Radius;
+    
+    v2 StartP;
+    v2 EndP;
+    real32 Speed;
+    
+    asteroid_state State;
+};
+
 struct game_state
 {
     screen_map Map;
     
-    // NOTE(Eric): TEMPORARY
-    v2 PlayerPosition;
-    v2 DeltaPlayerPosition;
-    
     player Player;
+    
+    asteroid Asteroids[256];
 };
 
 
@@ -56,7 +80,13 @@ Clamp(real32 Min, real32 Value, real32 Max)
     return Value;
 }
 
-
-
+inline u32
+GetColor(v3 Values)
+{
+    u32 Result = ((RoundReal32ToUInt32(Values.r * 255.0f) << 16) |
+                  (RoundReal32ToUInt32(Values.g * 255.0f) << 8) |
+                  (RoundReal32ToUInt32(Values.b * 255.0f) << 0));
+    return(Result);
+}
 
 #endif //ERIC_HANDMADE_H

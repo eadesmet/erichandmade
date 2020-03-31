@@ -130,4 +130,38 @@ RadiansToDegrees(real32 R)
     return(Result);
 }
 
+//~ V3
+
+// NOTE(Eric): V4 For colors instead? Do we want an Alpha value?
+union v3
+{
+    struct
+    {
+        real32 x;
+        real32 y;
+        real32 z;
+    };
+    struct
+    {
+        real32 r;
+        real32 g;
+        real32 b;
+    };
+    real32 E[3];
+};
+
+inline v3
+V3(real32 X, real32 Y, real32 Z)
+{
+    v3 Result;
+    
+    Result.x = X;
+    Result.y = Y;
+    Result.z = Z;
+    
+    return(Result);
+}
+
+// TODO(Eric): v3 functions
+
 #endif //ERIC_MATH_H
