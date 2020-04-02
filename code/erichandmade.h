@@ -21,7 +21,6 @@ struct player
     v2 CenterP; // Center of the Triangle
     v2 FrontP;  // Point of the front of the ship (where bullets will come out)
     
-    // NOTE(Eric): Probably not needed
     real32 FacingDirectionAngle;
 };
 
@@ -37,7 +36,7 @@ enum asteroid_state
 #define ASTEROID_LARGE_R 80
 
 // Asteroid Speed
-#define ASTEROIDSPEED_SLOW 4;
+#define ASTEROIDSPEED_SLOW 30;
 
 struct asteroid
 {
@@ -86,6 +85,15 @@ GetColor(v3 Values)
     u32 Result = ((RoundReal32ToUInt32(Values.r * 255.0f) << 16) |
                   (RoundReal32ToUInt32(Values.g * 255.0f) << 8) |
                   (RoundReal32ToUInt32(Values.b * 255.0f) << 0));
+    return(Result);
+}
+
+// NOTE(Eric): Linear Interpolation or lerp
+inline real32
+Mix(real32 A, real32 B, real32 Amount)
+{
+    real32 Result = (1-Amount) * A + Amount * B;
+    
     return(Result);
 }
 

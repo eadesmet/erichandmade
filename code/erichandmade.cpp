@@ -16,62 +16,34 @@ InitPlayer(game_state *GameState)
     return(Result);
 }
 
-internal asteroid
-InitAsteroid(game_state *GameState)
-{
-    asteroid Result = {};
-    
-    // TODO(Eric): Randomize all positions!
-    
-    Result.CenterP = V2(600, 600);
-    Result.Radius = ASTEROID_SMALL_R;
-    Result.State = ASTEROIDSTATE_ACTIVE;
-    Result.Speed = ASTEROIDSPEED_SLOW;
-    
-    Result.StartP = Result.CenterP;
-    v2 CenterMap = V2(MAP_WIDTH/2, MAP_HEIGHT/2);
-    Result.EndP = CenterMap;// - (Result.StartP - CenterMap);
-    
-    return(Result);
-}
-
-//~ NOTE(Eric): Unused Player Movement code
-// Might need some of these formulas for Asteroids moving on the screen
-#if 0
 internal void
-MovePlayer(game_state *GameState, real32 dt, v2 ddP)
+InitAsteroids(game_state *GameState)
 {
-    // NOTE(Eric): Player Movement notes:
-    // The Center point will always remain the same!
-    // Front point will change, then the calculation for the other two
-    // will have to be from the front calculated with the center and width
+    // TODO(Eric): Randomize all positions! (and size, and speed)
+    v2 CenterMap = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
     
-    // The FrontP has to be around a circle!
-    
-    // TODO(Eric): Pass in the entity that's moving
-    real32 ddPLength = LengthSq(ddP);
-    if(ddPLength > 1.0f)
+    int AsteroidCount = 20;
+    for(int AsteroidIndex = 0;
+        AsteroidIndex < ArrayCount(GameState->Asteroids) && AsteroidIndex < AsteroidCount;
+        ++AsteroidIndex)
     {
-        ddP *= (1.0f / SquareRoot(ddPLength));
+        v2 RandomP = V2(OFFSET_X, OFFSET_Y);
+        
+        RandomP.x = (real32)((AsteroidIndex*35) + 50);
+        RandomP.y = OFFSET_Y + (TILE_SIZE*2);
+        
+        asteroid Asteroid = {};
+        
+        Asteroid.CenterP = RandomP;
+        Asteroid.Radius = ASTEROID_SMALL_R;
+        Asteroid.State = ASTEROIDSTATE_ACTIVE;
+        Asteroid.Speed = ASTEROIDSPEED_SLOW;
+        Asteroid.StartP = Asteroid.CenterP;
+        Asteroid.EndP = CenterMap;
+        
+        GameState->Asteroids[AsteroidIndex] = Asteroid;
     }
-    
-    real32 PlayerSpeed = .1f; // m/s^2
-    ddP *= PlayerSpeed;
-    
-    ddP += -8.0f*GameState->DeltaPlayerPosition;
-    
-    v2 OldPlayerP = GameState->PlayerPosition;
-    v2 PlayerDelta = (0.5f*ddP*Square(dt) +
-                      GameState->DeltaPlayerPosition*dt);
-    GameState->DeltaPlayerPosition = ddP*dt + GameState->DeltaPlayerPosition;
-    v2 NewPlayerP = OldPlayerP + PlayerDelta;
-    
-    GameState->PlayerPosition = NewPlayerP;
-    
-    
-    // TODO(Eric): Collition With Player here!
 }
-#endif
 
 internal void
 MoveAsteroid(asteroid *Asteroid, real32 dt)
@@ -80,10 +52,25 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     // that is along the line of StartP -> EndP
     
     // Direction == Slope
-    real32 Direction = ((Asteroid->EndP.y - Asteroid->StartP.y) /
-                        AbsoluteValue(Asteroid->EndP.x - Asteroid->StartP.x));
-    Asteroid->CenterP.x += (Direction * (dt * Asteroid->Speed));
-    Asteroid->CenterP.y += (Direction * (dt * Asteroid->Speed));
+    
+    v2 DeltaP = Asteroid->EndP - Asteroid->CenterP;
+    real32 Distance = SquareRoot(LengthSq(DeltaP));
+    
+    if (Distance > 1)
+    {
+        real32 MoveX = (dt / Distance) * DeltaP.x; // ????????
+        real32 MoveY = (dt / Distance) * DeltaP.y; // ????????
+        
+        Asteroid->CenterP.x += MoveX*Asteroid->Speed;
+        Asteroid->CenterP.y += MoveY*Asteroid->Speed;
+    }
+    else
+    {
+        Asteroid->CenterP = Asteroid->EndP;
+        Asteroid->State = ASTEROIDSTATE_INACTIVE;
+    }
+    // 2*pos - prev_pos + dt*dt*accel
+    //Asteroid->CenterP = (2 * Asteroid->CenterP) - (Asteroid->StartP);// + ((2 * dt) * Asteroid->Speed);
 }
 
 
@@ -115,19 +102,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         // Init Player
         GameState->Player = InitPlayer(GameState);
         
-        
-        
-        
         // Init Asteroids
-#if 0
-        for(int AsteroidIndex = 0;
-            AsteroidIndex < ArrayCount(GameState->Asteroids);
-            ++AsteroidIndex)
-        {
-            asteroid Asteroid = GameState->Asteroids[AsteroidIndex];
-        }
-#endif
-        GameState->Asteroids[0] = InitAsteroid(GameState);
+        InitAsteroids(GameState);
         
         Memory->IsInitialized = true;
     }
@@ -141,7 +117,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         game_controller_input *Controller = GetController(Input, ControllerIndex);
         
         v2 ddP = {};
-        
         if(Controller->IsAnalog)
         {
             // NOTE(casey): Use analog movement tuning
@@ -174,47 +149,38 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
         }
         
-        //MovePlayer(GameState, Input->dtForFrame, ddP);
+        // Update players position
         GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                                       RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     }
     
+    // TODO(Eric): Move these back below 'Render' area!
+    ClearBackground(Render);
+    RenderMap(Render, &GameState->Map);
+    
+    
     // NOTE(Eric): Single for now, either loop here or change to MoveAsteroids
-    MoveAsteroid(&GameState->Asteroids[0], Input->dtForFrame);
+    for(int AsteroidIndex = 0;
+        AsteroidIndex < ArrayCount(GameState->Asteroids);
+        ++AsteroidIndex)
+    {
+        if (&GameState->Asteroids[AsteroidIndex])
+        {
+            MoveAsteroid(&GameState->Asteroids[AsteroidIndex], Input->dtForFrame);
+            RenderAsteroid(Render, &GameState->Asteroids[AsteroidIndex]); // NOTE(Eric): Rendering Here?
+            RenderAsteroidPositions(Render, &GameState->Asteroids[AsteroidIndex]);
+        }
+        else
+            break;
+    }
+    
     
     //
     // NOTE(Eric): Render
     //
-    ClearBackground(Render);
-    RenderMap(Render, &GameState->Map);
-    
-    // NOTE(Eric): Input.MouseX and Input.MouseY origin is the Top Left corner!
-    // This doesn't match the coords of what render_buffer uses!
-    
-    // NOTE(Eric): Movement is essentially:
-    // Getting the old position
-    // Calculating their 'speed' based on dtForFrame
-    // Setting their new position: old position + speed
     
     
-#if 0
-    // Drawing a grid
-    int GridSize = 20;
-    for (real32 y = 0; y <= Render->Height; y += GridSize)
-    {
-        // Draw horizontal lines
-        v2 P1 = v2{0, y};
-        v2 P2 = v2{(real32)Render->Width, y};
-        RenderLine(Render, P1, P2, 1, 0.4, 0.4, 0.4);
-    }
-    for (real32 x = 0; x <= Render->Width; x += GridSize)
-    {
-        // Draw vertical lines
-        v2 P1 = v2{x, 0};
-        v2 P2 = v2{x, (real32)Render->Height};
-        RenderLine(Render, P1, P2, 1, 0.4, 0.4, 0.4);
-    }
-#endif
+    
     
     
     
@@ -234,7 +200,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     RenderPlayer(Render, &GameState->Player, GameState->Map);
     
     // NOTE(Eric): Single for now, either loop here or change to RenderAsteroids
-    RenderAsteroid(Render, &GameState->Asteroids[0]);
+    
     
     
     
@@ -391,6 +357,22 @@ otherwise, reading something where you don't know anything, it could be good or 
 */
 
 /*
+
+Blog Post 5 (starting 3/31/2020):
+
+Started an asteroid struct
+my first attempt at drawing one and moving it across the screen
+
+
+-- thinking --
+To have different positions/coordinates
+EAch 'entity' has multiple positions (in HH, AbsTileX and Y, offsetx and y, width/height, etc.
+Then I think when one of the positions change, there is a function that basically syncs all location data
+-- thinking --
+
+*/
+
+/*
 Just a couple ideas:
 
 We could add a screen shake to the game fairly easily
@@ -433,6 +415,8 @@ Asteroid Movement
 
 Asteroid Destroying
 - first run can just be not rendering the asteroid anymore (changing it's state)
+- Destroy them if they are off the screen
+ -    We don't want to be tracking them if their trajectory is off the screen and getting further
 
 Collision detection
 - Player and Asteroid (game over)
@@ -451,3 +435,67 @@ Player shooting
 
 
 */
+
+// NOTE(Eric): Input.MouseX and Input.MouseY origin is the Top Left corner!
+// This doesn't match the coords of what render_buffer uses!
+
+// NOTE(Eric): Movement is essentially:
+// Getting the old position
+// Calculating their 'speed' based on dtForFrame
+// Setting their new position: old position + speed
+#if 0
+// Drawing a grid
+int GridSize = 20;
+for (real32 y = 0; y <= Render->Height; y += GridSize)
+{
+    // Draw horizontal lines
+    v2 P1 = v2{0, y};
+    v2 P2 = v2{(real32)Render->Width, y};
+    RenderLine(Render, P1, P2, 1, 0.4, 0.4, 0.4);
+}
+for (real32 x = 0; x <= Render->Width; x += GridSize)
+{
+    // Draw vertical lines
+    v2 P1 = v2{x, 0};
+    v2 P2 = v2{x, (real32)Render->Height};
+    RenderLine(Render, P1, P2, 1, 0.4, 0.4, 0.4);
+}
+#endif
+
+//~ NOTE(Eric): Unused Player Movement code
+// Might need some of these formulas for Asteroids moving on the screen
+#if 0
+internal void
+MovePlayer(game_state *GameState, real32 dt, v2 ddP)
+{
+    // NOTE(Eric): Player Movement notes:
+    // The Center point will always remain the same!
+    // Front point will change, then the calculation for the other two
+    // will have to be from the front calculated with the center and width
+    
+    // The FrontP has to be around a circle!
+    
+    // TODO(Eric): Pass in the entity that's moving
+    real32 ddPLength = LengthSq(ddP);
+    if(ddPLength > 1.0f)
+    {
+        ddP *= (1.0f / SquareRoot(ddPLength));
+    }
+    
+    real32 PlayerSpeed = .1f; // m/s^2
+    ddP *= PlayerSpeed;
+    
+    ddP += -8.0f*GameState->DeltaPlayerPosition;
+    
+    v2 OldPlayerP = GameState->PlayerPosition;
+    v2 PlayerDelta = (0.5f*ddP*Square(dt) +
+                      GameState->DeltaPlayerPosition*dt);
+    GameState->DeltaPlayerPosition = ddP*dt + GameState->DeltaPlayerPosition;
+    v2 NewPlayerP = OldPlayerP + PlayerDelta;
+    
+    GameState->PlayerPosition = NewPlayerP;
+    
+    
+    // TODO(Eric): Collition With Player here!
+}
+#endif

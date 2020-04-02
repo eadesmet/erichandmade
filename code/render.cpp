@@ -80,6 +80,7 @@ RenderSquare(render_buffer* Render, v2 Pos, u32 Size, v3 Color)
 #endif
 }
 
+//~ NOTE(Eric): Line
 inline void
 PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
@@ -179,6 +180,7 @@ RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
     
 }
 
+//~ NOTE(Eric): Circle
 inline void
 RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 Color)
 {
@@ -227,6 +229,7 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 
     //RenderSquare(Render, Center, V2(2,2), 0, 1, 0);
 }
 
+//~ NOTE(Eric): Player
 inline void
 RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 {
@@ -291,6 +294,7 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 #endif
 }
 
+//~ NOTE(Eric): Asteroids
 inline void
 RenderAsteroid(render_buffer* Render, asteroid* Asteroid)
 {
@@ -301,6 +305,17 @@ RenderAsteroid(render_buffer* Render, asteroid* Asteroid)
     }
 }
 
+inline void
+RenderAsteroidPositions(render_buffer* Render, asteroid* Asteroid)
+{
+    RenderSquare(Render, Asteroid->CenterP, 2, V3(0,1,0));
+    
+    RenderSquare(Render, Asteroid->StartP, 2, V3(0,0,1));
+    RenderSquare(Render, Asteroid->EndP, 2, V3(0,1,0));
+}
+
+
+//~ NOTE(Eric): Map
 inline void
 RenderMap(render_buffer* Render, screen_map *Map)
 {
