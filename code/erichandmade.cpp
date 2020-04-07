@@ -35,11 +35,16 @@ InitAsteroids(game_state *GameState)
         asteroid Asteroid = {};
         
         Asteroid.CenterP = RandomP;
+        Asteroid.StartP = Asteroid.CenterP;
+        Asteroid.EndP = CenterMap;
+        
         Asteroid.Radius = ASTEROID_SMALL_R;
         Asteroid.State = ASTEROIDSTATE_ACTIVE;
         Asteroid.Speed = ASTEROIDSPEED_SLOW;
-        Asteroid.StartP = Asteroid.CenterP;
-        Asteroid.EndP = CenterMap;
+        
+        tile Tile = GetTileAtPosition(&GameState->Map, Asteroid.CenterP);
+        Asteroid.TileRelP = Asteroid.CenterP - Tile.BottomLeft;
+        Asteroid.TileIndex = GetTileIndexAtPosition(&GameState->Map, Asteroid.CenterP);
         
         GameState->Asteroids[AsteroidIndex] = Asteroid;
     }
@@ -58,11 +63,15 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     
     if (Distance > 1)
     {
+#if 0
         real32 MoveX = (dt / Distance) * DeltaP.x; // ????????
         real32 MoveY = (dt / Distance) * DeltaP.y; // ????????
         
         Asteroid->CenterP.x += MoveX*Asteroid->Speed;
         Asteroid->CenterP.y += MoveY*Asteroid->Speed;
+#else
+        Asteroid->CenterP = Mix(Asteroid->CenterP, Asteroid->EndP, .01f);
+#endif
     }
     else
     {
@@ -72,6 +81,124 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     // 2*pos - prev_pos + dt*dt*accel
     //Asteroid->CenterP = (2 * Asteroid->CenterP) - (Asteroid->StartP);// + ((2 * dt) * Asteroid->Speed);
 }
+
+
+internal void
+CheckCollisions(game_state *GameState)
+{
+    // TODO(Eric): THIS IS ALL BAD, I DON't KNOW HOW ARRAYS OR HASHES WORK
+    
+    //Foreach Entity t
+    //  Calculate xmin and xmax for x position of entity
+    //  for x in xmin to xmax
+    //    calculate ymin and ymax for y position of entity
+    //    for y in ymin to y max
+    //      if KEY(x,y) is NOT inside of hash array of 'buckets'
+    //        initialize new collection with KEY(x,y) to buckets
+    //      else
+    //        for each Entity other in buckets KEY(x,y)
+    //          add to Maybe collision (other and t)
+    //      add t to buckets KEY(x,y)
+    //foreach possiblecollision in maybecollision
+    //    if really collide
+    //      do something
+    
+    real32 BucketSize = 20;
+    collision_hash CollisionBuckets[128]; // NEED TO INITIALIZE TO 0
+    collision PossibleCollisions[128]; // NEED TO INITIALIZE TO 0
+    
+    // NOTEs:
+    // Using Min and Max like this is creating a Square (bounding box) around our asteroids
+    // Each 'Bucket' contains an array of Asteroids that are inside that bucket
+    // PossibleCollisions is an array of (Ast1,Ast2) that are possibly colliding
+    
+    for (int EntityIndex = 0;
+         EntityIndex < ArrayCount(GameState->Asteroids);
+         EntityIndex++)
+    {
+        asteroid Asteroid = GameState->Asteroids[EntityIndex];
+        int MinX = (int)(Asteroid.CenterP.x - Asteroid.Radius / BucketSize);
+        int MaxX = (int)(Asteroid.CenterP.x + Asteroid.Radius / BucketSize);
+        for (int x = MinX;
+             x < MaxX;
+             x++)
+        {
+            int MinY = (int)(Asteroid.CenterP.y - Asteroid.Radius / BucketSize);
+            int MaxY = (int)(Asteroid.CenterP.y + Asteroid.Radius / BucketSize);
+            for (int y = MinY;
+                 y < MaxY;
+                 y++)
+            {
+                // TODO(Eric): Better hash function?
+                u32 HashValue = x*6 + y*2;
+                u32 HashSlot = HashValue & (ArrayCount(CollisionBuckets) - 1);
+                Assert(HashSlot < ArrayCount(CollisionBuckets));
+                collision_hash *Hash = CollisionBuckets + HashSlot;
+                if (!(&Hash->Asteroids[0])) // If Asteroids is NOT EMPTY
+                {
+                    // For each Asteroid in this Bucket (since it's not empty)
+                    // - Add a new entry to PossibleCollisions with this asteroid and Asteroid
+                    for (asteroid *OtherAsteroid = Hash->Asteroids;
+                         &OtherAsteroid; // While the pointer is not 0, right?
+                         OtherAsteroid++)
+                    {
+                        collision *CollisionsAddress = &PossibleCollisions[0];
+                        collision *NextSlot;
+                        do
+                        {
+                            NextSlot = CollisionsAddress++; // no idea if this works
+                        } while (!NextSlot);
+                        collision NewCollision = {};
+                        NewCollision.Ast1 = *OtherAsteroid;
+                        NewCollision.Ast2 = Asteroid;
+                        *NextSlot = NewCollision;
+                        
+                        //for (int PossibleIndex = 0;
+                        //PossibleIndex < ArrayCount(PossibleCollisions);
+                        //PossibleIndex++)
+                        //{
+                        //collision *PossibleCollision = &PossibleCollisions[PossibleIndex];
+                        //if (!PossibleCollision)
+                        //{
+                        //PossibleCollisions[PossibleIndex] = collision{OtherAsteroid, Asteroid};
+                    }
+                }
+                else
+                {
+                    // Initialize new thing for Hash
+                    //Hash->Asteroids = {}; //?
+                }
+                
+                // (Always) Append Asteroid to CollisionBuckets
+                for (int AsteroidIndex = 0;
+                     AsteroidIndex < ArrayCount(Hash->Asteroids);
+                     AsteroidIndex++)
+                {
+                    if (Hash->Asteroids[AsteroidIndex].State == ASTEROIDSTATE_INACTIVE)
+                    {
+                        Hash->Asteroids[AsteroidIndex] = Asteroid;
+                        break;
+                    }
+                    
+                }
+            }
+        }
+    }
+    
+    
+    for (int PossibleIndex = 0;
+         PossibleIndex < ArrayCount(PossibleCollisions);
+         PossibleIndex++)
+    {
+        // CheckCollision(collision)
+    }
+    
+}
+
+
+
+
+
 
 
 //~NOTE(Eric): Game Update and Render
@@ -154,12 +281,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                                       RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     }
     
-    // TODO(Eric): Move these back below 'Render' area!
-    ClearBackground(Render);
-    RenderMap(Render, &GameState->Map);
     
-    
-    // NOTE(Eric): Single for now, either loop here or change to MoveAsteroids
+    // NOTE(Eric): Move Asteroids
     for(int AsteroidIndex = 0;
         AsteroidIndex < ArrayCount(GameState->Asteroids);
         ++AsteroidIndex)
@@ -167,22 +290,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         if (&GameState->Asteroids[AsteroidIndex])
         {
             MoveAsteroid(&GameState->Asteroids[AsteroidIndex], Input->dtForFrame);
-            RenderAsteroid(Render, &GameState->Asteroids[AsteroidIndex]); // NOTE(Eric): Rendering Here?
-            RenderAsteroidPositions(Render, &GameState->Asteroids[AsteroidIndex]);
         }
         else
             break;
     }
     
     
+    CheckCollisions(GameState);
+    
     //
     // NOTE(Eric): Render
     //
-    
-    
-    
-    
-    
+    ClearBackground(Render);
+    RenderMap(Render, &GameState->Map);
     
     
     // Crosshairs
@@ -195,12 +315,37 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                V2((MAP_WIDTH/2)+OFFSET_X, OFFSET_Y),
                V2((MAP_WIDTH/2)+OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
     
+    // Map Outline
+    RenderLine(Render,
+               V2(OFFSET_X, OFFSET_Y),
+               V2(MAP_WIDTH+OFFSET_X, OFFSET_Y), 1, CrosshairColor);
+    RenderLine(Render,
+               V2(OFFSET_X, OFFSET_Y),
+               V2(OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
+    RenderLine(Render,
+               V2(MAP_WIDTH+OFFSET_X, MAP_HEIGHT+OFFSET_Y),
+               V2(OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
+    RenderLine(Render,
+               V2(MAP_WIDTH+OFFSET_X, MAP_HEIGHT+OFFSET_Y),
+               V2(MAP_WIDTH+OFFSET_X, OFFSET_Y), 1, CrosshairColor);
+    
     
     
     RenderPlayer(Render, &GameState->Player, GameState->Map);
     
-    // NOTE(Eric): Single for now, either loop here or change to RenderAsteroids
-    
+    // NOTE(Eric): Render Asteroids
+    for(int AsteroidIndex = 0;
+        AsteroidIndex < ArrayCount(GameState->Asteroids);
+        ++AsteroidIndex)
+    {
+        if (&GameState->Asteroids[AsteroidIndex])
+        {
+            RenderAsteroid(Render, &GameState->Asteroids[AsteroidIndex]); // NOTE(Eric): Rendering Here?
+            RenderAsteroidPositions(Render, &GameState->Asteroids[AsteroidIndex]);
+        }
+        else
+            break;
+    }
     
     
     
@@ -368,7 +513,21 @@ my first attempt at drawing one and moving it across the screen
 To have different positions/coordinates
 EAch 'entity' has multiple positions (in HH, AbsTileX and Y, offsetx and y, width/height, etc.
 Then I think when one of the positions change, there is a function that basically syncs all location data
+See function 'MoveIntoTileSpace'
 -- thinking --
+
+-- continued thinking (days later)--
+This coordinate system can be whatever we want
+HH had locations relative to which TileMap they are on,
+as well as a postition relative to the tiles themselves (the offset from the tile's corner)
+
+also big note.. Define why we are trying to do this coordinate system stuff
+- Trying to remove the idea of 'Pixels' when we work with positions
+- Working in pixels means we are constantly thinking about calculations that we don't have to
+-
+
+-- continued thinking --
+
 
 */
 

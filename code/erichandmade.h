@@ -48,6 +48,32 @@ struct asteroid
     real32 Speed;
     
     asteroid_state State;
+    
+    
+    
+    
+    // NOTE(Eric): Testing this out, not sure what I'm doing
+    
+    // This is the Position in the Tile, relative to Tile.BottomLeft
+    // Values must be Greater than 0, Less than TileSize
+    // If they are out of those bounds, needs to change Tiles
+    v2 TileRelP;
+    
+    // X and Y Index of which Tile we are on
+    v2 TileIndex;
+};
+
+struct collision
+{
+    asteroid Ast1;
+    asteroid Ast2;
+};
+
+struct collision_hash
+{
+    asteroid Asteroids[128]; // Size here is the max number of Asteroids in a single bucket
+    
+    collision_hash *NextInHash;
 };
 
 struct game_state
@@ -57,6 +83,8 @@ struct game_state
     player Player;
     
     asteroid Asteroids[256];
+    
+    //collision_hash CollisionBuckets[512];
 };
 
 
@@ -93,6 +121,16 @@ inline real32
 Mix(real32 A, real32 B, real32 Amount)
 {
     real32 Result = (1-Amount) * A + Amount * B;
+    
+    return(Result);
+}
+
+inline v2
+Mix(v2 A, v2 B, real32 Amount)
+{
+    v2 Result = {};
+    Result.x = (1-Amount) * A.x + Amount * B.x;
+    Result.y = (1-Amount) * A.y + Amount * B.y;
     
     return(Result);
 }

@@ -50,3 +50,42 @@ GetTileAtPosition(screen_map *Map, v2 Pos)
     
     return(Result);
 }
+
+inline v2
+GetTileIndexAtPosition(screen_map *Map, v2 Pos)
+{
+    v2 Result = {};
+    
+    bool32 Found = 0;
+    u16 IndexY = 0;
+    
+    while(!Found)
+    {
+        for (u16 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
+        {
+            tile Tile = Map->Tiles[IndexY][IndexX];
+            if ((Pos.x >= Tile.BottomLeft.x) &&
+                ((Tile.BottomLeft.x + TILE_SIZE-1) >= Pos.x))
+            {
+                if ((Pos.y >= Tile.BottomLeft.y) &&
+                    ((Tile.BottomLeft.y + TILE_SIZE-1) >= Pos.y))
+                {
+                    Result = V2(IndexX, IndexY);
+                    Found = true;
+                    break;
+                }
+            }
+        }
+        ++IndexY;
+    }
+    
+    return (Result);
+}
+
+inline void
+RecalculatePosition()
+{
+    // Take a position in Pixels, and calculate postition relative to the tile?
+    //?????????????
+    
+}

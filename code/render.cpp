@@ -298,7 +298,7 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 inline void
 RenderAsteroid(render_buffer* Render, asteroid* Asteroid)
 {
-    v3 AsteroidColor = V3(1,0,0);
+    v3 AsteroidColor = V3(1,1,1);
     if (Asteroid->State != ASTEROIDSTATE_INACTIVE)
     {
         RenderCircle(Render, Asteroid->CenterP, Asteroid->Radius, 1, AsteroidColor);
