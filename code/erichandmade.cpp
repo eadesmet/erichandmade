@@ -41,6 +41,7 @@ InitAsteroids(game_state *GameState)
         Asteroid.Radius = ASTEROID_SMALL_R;
         Asteroid.State = ASTEROIDSTATE_ACTIVE;
         Asteroid.Speed = ASTEROIDSPEED_SLOW;
+        Asteroid.Color = V3(1,1,1);
         
         tile Tile = GetTileAtPosition(&GameState->Map, Asteroid.CenterP);
         Asteroid.TileRelP = Asteroid.CenterP - Tile.BottomLeft;
@@ -82,7 +83,22 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     //Asteroid->CenterP = (2 * Asteroid->CenterP) - (Asteroid->StartP);// + ((2 * dt) * Asteroid->Speed);
 }
 
+internal bool32
+CheckCollisionAsteroids(asteroid Ast1, asteroid Ast2)
+{
+    bool32 Result = false;
+    
+    real32 DeltaX = Ast2.CenterP.x - Ast1.CenterP.x;
+    real32 DeltaY = Ast2.CenterP.y - Ast1.CenterP.y;
+    
+    real32 Distance = SquareRoot(DeltaX*DeltaX + DeltaY*DeltaY);
+    
+    if (Distance <= (Ast1.Radius + Ast2.Radius)) Result = true;
+    
+    return(Result);
+}
 
+#if 0
 internal void
 CheckCollisions(game_state *GameState)
 {
@@ -194,7 +210,7 @@ CheckCollisions(game_state *GameState)
     }
     
 }
-
+#endif
 
 
 
@@ -296,7 +312,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     }
     
     
-    CheckCollisions(GameState);
+    // TODO(Eric): On Collision, Change the EndP of the Asteroid! That's it!!! HAHHAHAHAHAHHAHHH
+    // We can do a calculation based on the line of StartP -> EndP of each asteroid
+    // and calculate a new EndP for each one
+    bool32 SampleCollision = CheckCollisionAsteroids(GameState->Asteroids[0], GameState->Asteroids[4]);
+    if (SampleCollision)
+    {
+        GameState->Asteroids[0].Color = V3(1,.5,0);
+        GameState->Asteroids[4].Color = V3(1,.5,0);
+    }
+    else
+    {
+        GameState->Asteroids[0].Color = V3(1,1,1);
+        GameState->Asteroids[4].Color = V3(1,1,1);
+    }
+    
     
     //
     // NOTE(Eric): Render
@@ -525,8 +555,30 @@ also big note.. Define why we are trying to do this coordinate system stuff
 - Trying to remove the idea of 'Pixels' when we work with positions
 - Working in pixels means we are constantly thinking about calculations that we don't have to
 -
-
 -- continued thinking --
+
+ tried to just type in a ton of code (first CheckCollisions) that I didn't understand
+from the '6 useful snippets' on [hashing?]
+first compiling version gave a stackoverflow, so I made the arrays smaller
+- still not sure how they were so big?
+- also mention that the stack overflow didn't tell me anything, and I couldn't even step into the function
+second compiling version didn't do anything that I wanted, really
+I stepped through it, and it just didn't work
+I could probably still make it work with some tweaks, but I commented it out for now
+
+Then, I looked up raylib's collision functions, and WOW
+It's actually so easy!
+two circles colliding is just a calculation of the distance of their center points and radiuses added together!
+my first thoughts on circle collision was to check _every_ point on the circle, and that's just completely wrong
+I typed up this collision and had a test working within 5 minutes
+much better time spent than the huge 'collision buckets' thingy.
+
+What I need is a custom solution to what we are dealing with specifically here.
+So armed with the collision detector with two circles, we need to check collisions for all of them
+(also, realized that for asteroids 'bouncing' off eachother,
+- I can simply just change the EndP! this was huge realization)
+Since we will only have, like a MAX of 50 asteroids on the screen, it wouldn't be too bad to check all of them
+against all the others, every time. We'll have to test this out.
 
 
 */

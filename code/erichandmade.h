@@ -49,7 +49,7 @@ struct asteroid
     
     asteroid_state State;
     
-    
+    v3 Color;
     
     
     // NOTE(Eric): Testing this out, not sure what I'm doing
