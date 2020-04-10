@@ -320,6 +320,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         GameState->Asteroids[0].Color = V3(1,.5,0);
         GameState->Asteroids[4].Color = V3(1,.5,0);
+        
+        GameState->Asteroids[0].EndP = V2(OFFSET_X, MAP_HEIGHT);
     }
     else
     {
