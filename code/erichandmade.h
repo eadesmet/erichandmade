@@ -51,9 +51,7 @@ struct asteroid
     
     v3 Color;
     
-    
     // NOTE(Eric): Testing this out, not sure what I'm doing
-    
     // This is the Position in the Tile, relative to Tile.BottomLeft
     // Values must be Greater than 0, Less than TileSize
     // If they are out of those bounds, needs to change Tiles
@@ -78,13 +76,19 @@ struct collision_hash
 
 struct game_state
 {
-    screen_map Map;
+    // NOTE(Eric): These are to compare against the Render width/height to update the array
+    s32 RenderWidth;
+    s32 RenderHeight;
+    real32 RenderHalfWidth;
+    real32 RenderHalfHeight;
     
     player Player;
     
     asteroid Asteroids[256];
     
-    //collision_hash CollisionBuckets[512];
+    // NOTE(Eric): I beleive this has to come last in game_state so it doesn't collide
+    // since it's varying in size
+    screen_map Map;
 };
 
 

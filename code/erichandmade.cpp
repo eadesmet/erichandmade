@@ -8,7 +8,7 @@ internal player
 InitPlayer(game_state *GameState)
 {
     player Result = {};
-    Result.CenterP = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
+    Result.CenterP = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     Result.FacingDirectionAngle = 180;
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
@@ -20,17 +20,17 @@ internal void
 InitAsteroids(game_state *GameState)
 {
     // TODO(Eric): Randomize all positions! (and size, and speed)
-    v2 CenterMap = GameState->Map.Tiles[TILE_COUNT_Y/2][TILE_COUNT_X/2].BottomLeft;
+    v2 CenterMap = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     
     int AsteroidCount = 20;
     for(int AsteroidIndex = 0;
         AsteroidIndex < ArrayCount(GameState->Asteroids) && AsteroidIndex < AsteroidCount;
         ++AsteroidIndex)
     {
-        v2 RandomP = V2(OFFSET_X, OFFSET_Y);
+        v2 RandomP = {};
         
         RandomP.x = (real32)((AsteroidIndex*35) + 50);
-        RandomP.y = OFFSET_Y + (TILE_SIZE*2);
+        RandomP.y = (TILE_SIZE*2);
         
         asteroid Asteroid = {};
         
@@ -43,9 +43,9 @@ InitAsteroids(game_state *GameState)
         Asteroid.Speed = ASTEROIDSPEED_SLOW;
         Asteroid.Color = V3(1,1,1);
         
-        tile Tile = GetTileAtPosition(&GameState->Map, Asteroid.CenterP);
-        Asteroid.TileRelP = Asteroid.CenterP - Tile.BottomLeft;
-        Asteroid.TileIndex = GetTileIndexAtPosition(&GameState->Map, Asteroid.CenterP);
+        //tile Tile = GetTileAtPosition(&GameState->Map, Asteroid.CenterP);
+        //Asteroid.TileRelP = Asteroid.CenterP - Tile.BottomLeft;
+        //Asteroid.TileIndex = GetTileIndexAtPosition(&GameState->Map, Asteroid.CenterP);
         
         GameState->Asteroids[AsteroidIndex] = Asteroid;
     }
@@ -227,20 +227,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if (!Memory->IsInitialized)
     {
-        //u32 TileCountY = MAP_HEIGHT / TILE_SIZE;
-        //u32 TileCountX = MAP_WIDTH / TILE_SIZE;
-        for (u32 IndexY = 0; IndexY < TILE_COUNT_Y; ++IndexY)
-        {
-            for (u32 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
-            {
-                v2 NewPoint = V2((real32)(OFFSET_X + (IndexX * TILE_SIZE)),
-                                 (real32)(OFFSET_Y + (IndexY * TILE_SIZE)));
-                
-                //RenderSquare(Render, NewPoint, v2{2,2}, 1, 0, 0);
-                
-                GameState->Map.Tiles[IndexY][IndexX].BottomLeft = NewPoint;
-            }
-        }
+        GameState->RenderWidth = Render->Width;
+        GameState->RenderHeight = Render->Height;
+        GameState->RenderHalfWidth = (real32)GameState->RenderWidth / 2.0f;
+        GameState->RenderHalfHeight = (real32)GameState->RenderHeight / 2.0f;
+        
+        
+        //GameState->Map[0] =
+        // Init Map
+        InitMap(GameState);
         
         // Init Player
         GameState->Player = InitPlayer(GameState);
@@ -249,6 +244,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         InitAsteroids(GameState);
         
         Memory->IsInitialized = true;
+    }
+    
+    if (GameState->RenderWidth != Render->Width ||
+        GameState->RenderHeight != Render->Height)
+    {
+        GameState->RenderWidth = Render->Width;
+        GameState->RenderHeight = Render->Height;
+        GameState->RenderHalfWidth = (real32)GameState->RenderWidth / 2.0f;
+        GameState->RenderHalfHeight = (real32)GameState->RenderHeight / 2.0f;
+        // Reinitialize Map
+        InitMap(GameState);
+        
+        GameState->Player.CenterP = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+        GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
+                                      RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     }
     
     
@@ -321,7 +331,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->Asteroids[0].Color = V3(1,.5,0);
         GameState->Asteroids[4].Color = V3(1,.5,0);
         
-        GameState->Asteroids[0].EndP = V2(OFFSET_X, MAP_HEIGHT);
+        GameState->Asteroids[0].EndP = V2(TILE_SIZE, 200);
     }
     else
     {
@@ -340,30 +350,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // Crosshairs
     v3 CrosshairColor = V3(0.5,0.5,0.5);
     RenderLine(Render,
-               V2(OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y),
-               V2(MAP_WIDTH+OFFSET_X, (MAP_HEIGHT / 2)+OFFSET_Y), 1, CrosshairColor);
+               V2(0, GameState->RenderHalfHeight),
+               V2((real32)GameState->RenderWidth, GameState->RenderHalfHeight), 1, CrosshairColor);
     
     RenderLine(Render,
-               V2((MAP_WIDTH/2)+OFFSET_X, OFFSET_Y),
-               V2((MAP_WIDTH/2)+OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
-    
-    // Map Outline
-    RenderLine(Render,
-               V2(OFFSET_X, OFFSET_Y),
-               V2(MAP_WIDTH+OFFSET_X, OFFSET_Y), 1, CrosshairColor);
-    RenderLine(Render,
-               V2(OFFSET_X, OFFSET_Y),
-               V2(OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
-    RenderLine(Render,
-               V2(MAP_WIDTH+OFFSET_X, MAP_HEIGHT+OFFSET_Y),
-               V2(OFFSET_X, MAP_HEIGHT+OFFSET_Y), 1, CrosshairColor);
-    RenderLine(Render,
-               V2(MAP_WIDTH+OFFSET_X, MAP_HEIGHT+OFFSET_Y),
-               V2(MAP_WIDTH+OFFSET_X, OFFSET_Y), 1, CrosshairColor);
+               V2(GameState->RenderHalfWidth, 0),
+               V2(GameState->RenderHalfWidth, (real32)GameState->RenderHeight), 1, CrosshairColor);
     
     
     
-    RenderPlayer(Render, &GameState->Player, GameState->Map);
+    RenderPlayer(Render, &GameState->Player, &GameState->Map);
     
     // NOTE(Eric): Render Asteroids
     for(int AsteroidIndex = 0;
@@ -372,7 +368,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         if (&GameState->Asteroids[AsteroidIndex])
         {
-            RenderAsteroid(Render, &GameState->Asteroids[AsteroidIndex]); // NOTE(Eric): Rendering Here?
+            RenderAsteroid(Render, &GameState->Map, &GameState->Asteroids[AsteroidIndex]);
             RenderAsteroidPositions(Render, &GameState->Asteroids[AsteroidIndex]);
         }
         else
@@ -380,6 +376,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     }
     
     
+    // Testing random square for colliding tiles
+    colliding_tiles_result CollidingTiles = GetTilesInSquare(&GameState->Map, V2(62,62), 90);
+    RenderCollidingTiles(Render, CollidingTiles);
     
 }
 
@@ -582,6 +581,15 @@ So armed with the collision detector with two circles, we need to check collisio
 Since we will only have, like a MAX of 50 asteroids on the screen, it wouldn't be too bad to check all of them
 against all the others, every time. We'll have to test this out.
 
+I ended this post short, because I'll be doing this refactor now. I hope.
+
+*/
+
+/*
+
+Blog Post 6 (starting 4/15/2020):
+
+Ok, do the refactor! Get into it! We can do this!
 
 */
 
@@ -630,6 +638,7 @@ Asteroid Destroying
 - first run can just be not rendering the asteroid anymore (changing it's state)
 - Destroy them if they are off the screen
  -    We don't want to be tracking them if their trajectory is off the screen and getting further
+- We could 'cycle' out inactive asteroids and create a new one in their place in the array
 
 Collision detection
 - Player and Asteroid (game over)

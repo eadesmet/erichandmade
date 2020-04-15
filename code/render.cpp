@@ -35,7 +35,7 @@ ClearBackground(render_buffer *Render)
 }
 
 inline void
-RenderSquare(render_buffer* Render, v2 Pos, u32 Size, v3 Color)
+RenderSquare(render_buffer *Render, v2 Pos, u32 Size, v3 Color)
 {
     // Draw a rectangle - Our coordinate system is bottom-up
     Pos.x = Clamp(0.0f, Pos.x, (real32)Render->Width);
@@ -80,9 +80,23 @@ RenderSquare(render_buffer* Render, v2 Pos, u32 Size, v3 Color)
 #endif
 }
 
+//~ NOTE(Eric): Debug Rendering
+inline void
+RenderCollidingTiles(render_buffer *Render, colliding_tiles_result CollidingTiles)
+{
+    if (CollidingTiles.Count > 0)
+    {
+        for(u32 Index = 0; Index < CollidingTiles.Count; ++Index)
+        {
+            v2 Position = CollidingTiles.Tiles[Index].BottomLeft;
+            RenderSquare(Render, Position, TILE_SIZE, V3(.5,.7,.5));
+        }
+    }
+}
+
 //~ NOTE(Eric): Line
 inline void
-PlotLineLow(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
+PlotLineLow(render_buffer *Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
     real32 DeltaX = P2.x - P1.x;
     real32 DeltaY = P2.y - P1.y;
@@ -231,7 +245,7 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 
 
 //~ NOTE(Eric): Player
 inline void
-RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
+RenderPlayer(render_buffer* Render, player* Player, screen_map *Map)
 {
     v2 Center = Player->CenterP;
     v2 Front = Player->FrontP;
@@ -268,9 +282,23 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
     
     v3 PlayerColor = V3(0.8, 0.8, 0.8);
     
+    
+    // Test
+    v2 CollideStartP = Center - PLAYER_LENGTH_TO_CENTER;
+    
+    // TODO(Eric): This doesn't quite reach the top and left sides
+    // Maybe I could experiment with getting a single point from each octant of a circle
+    u32 CollideSize = PLAYER_LENGTH_TO_CENTER * 2;
+    
+    colliding_tiles_result CollidingTiles = GetTilesInSquare(Map, CollideStartP, CollideSize);
+    RenderCollidingTiles(Render, CollidingTiles);
+    // /Test
+    
     RenderLine(Render, Player->FrontP, PlayerTopP, 1, PlayerColor);
     RenderLine(Render, Player->FrontP, PlayerBottomP, 1, PlayerColor);
     RenderLine(Render, PlayerBottomP, PlayerTopP, 1, PlayerColor);
+    
+    
     
 #if 0
     // Center point
@@ -296,10 +324,14 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map Map)
 
 //~ NOTE(Eric): Asteroids
 inline void
-RenderAsteroid(render_buffer* Render, asteroid* Asteroid)
+RenderAsteroid(render_buffer* Render, screen_map *Map, asteroid* Asteroid)
 {
     if (Asteroid->State != ASTEROIDSTATE_INACTIVE)
     {
+        tile CollidingTile = GetTileAtPosition(Map, Asteroid->CenterP);
+        if (CollidingTile.BottomLeft != V2(0,0)) // TODO(ERIC): do something here for a tile that wasn't found
+            RenderSquare(Render, CollidingTile.BottomLeft, TILE_SIZE, V3(.5,.2,.5));
+        
         RenderCircle(Render, Asteroid->CenterP, Asteroid->Radius, 1, Asteroid->Color);
     }
 }
@@ -319,14 +351,14 @@ inline void
 RenderMap(render_buffer* Render, screen_map *Map)
 {
     v3 MapGridColor = V3(0.2,0.2,0.2);
-    for (u32 IndexY = 0; IndexY < TILE_COUNT_Y; ++IndexY)
+    for (u32 IndexY = 0; IndexY < Map->TileCountY; ++IndexY)
     {
-        for (u32 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
+        for (u32 IndexX = 0; IndexX < Map->TileCountX; ++IndexX)
         {
             //RenderSquare(Render, Map->Tiles[IndexY][IndexX].BottomLeft, v2{2,2}, 1, 1, 0);
             
             // NOTE(Eric): Render Outline of a Square - Could be a handy function to have
-            v2 BottomLeft = Map->Tiles[IndexY][IndexX].BottomLeft;
+            v2 BottomLeft = Map->Tiles[IndexY*Map->TileCountX + IndexX].BottomLeft;
             RenderLine(Render, BottomLeft,
                        V2(BottomLeft.x, BottomLeft.y+TILE_SIZE),
                        1, MapGridColor);

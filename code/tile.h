@@ -2,24 +2,29 @@
 #define TILE_H
 
 #define TILE_SIZE 20
-#define MAP_WIDTH 800
-#define MAP_HEIGHT 600
-
-#define TILE_COUNT_X MAP_WIDTH / TILE_SIZE
-#define TILE_COUNT_Y MAP_HEIGHT / TILE_SIZE
-
-#define OFFSET_X 40
-#define OFFSET_Y 40
 
 struct tile
 {
     v2 BottomLeft;
+    
+    // NOTE(Eric): Not Used yet? Do we need it?
+    tile *NextTile;
 };
 
 struct screen_map
 {
-    tile Tiles[TILE_COUNT_Y][TILE_COUNT_X];
+    u32 TileCountX;
+    u32 TileCountY;
+    
+    // NOTE(Eric): Index is: (Y-Index * TileCountX + X-Index)
+    tile Tiles[4096];
 };
 
+struct colliding_tiles_result
+{
+    u32 Count;
+    
+    tile Tiles[4096];
+};
 
 #endif //TILE_H

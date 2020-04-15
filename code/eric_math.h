@@ -90,10 +90,29 @@ operator-(v2 A, v2 B)
     return(Result);
 }
 
+inline v2
+operator-(v2 A, u32 B)
+{
+    v2 Result;
+    
+    Result.x = A.x - B;
+    Result.y = A.y - B;
+    
+    return(Result);
+}
+
 inline bool32
 operator==(v2 P1, v2 P2)
 {
     bool32 Result = (P1.x == P2.x) && (P1.y == P2.y);
+    
+    return(Result);
+}
+
+inline bool32
+operator!=(v2 P1, v2 P2)
+{
+    bool32 Result = (P1.x != P2.x) && (P1.y != P2.y);
     
     return(Result);
 }
