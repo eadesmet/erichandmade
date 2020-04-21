@@ -487,6 +487,42 @@ Win32ProcessPendingMessages(win32_state *State, game_controller_input *KeyboardC
                     }
 #endif
                 }
+                else
+                {
+                    // NOTE(Eric): Key was held down
+                    if(VKCode == 'W')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveUp, IsDown);
+                    }
+                    else if(VKCode == 'A')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveLeft, IsDown);
+                    }
+                    else if(VKCode == 'S')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveDown, IsDown);
+                    }
+                    else if(VKCode == 'D')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveRight, IsDown);
+                    }
+                    else if(VKCode == VK_UP)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionUp, IsDown);
+                    }
+                    else if(VKCode == VK_LEFT)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionLeft, IsDown);
+                    }
+                    else if(VKCode == VK_DOWN)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionDown, IsDown);
+                    }
+                    else if(VKCode == VK_RIGHT)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionRight, IsDown);
+                    }
+                }
                 
                 bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
                 if((VKCode == VK_F4) && AltKeyWasDown)

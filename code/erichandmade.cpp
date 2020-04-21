@@ -277,27 +277,27 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         }
         else
         {
-            // TODO(Eric): Handle movement when the button is held down
-            // Maybe we can add IsDown to the game_input_state?
+            // NOTE(Eric): Player Movement is currently based on framerate!
+            // TODO(Eric): Player Movement does NOT feel good
             // NOTE(casey): Use digital movement tuning
             if(Controller->MoveUp.EndedDown)
             {
-                GameState->Player.FacingDirectionAngle -= 5;
+                GameState->Player.FacingDirectionAngle -= 10;
                 ddP.y = 1.0f;
             }
             if(Controller->MoveDown.EndedDown)
             {
-                GameState->Player.FacingDirectionAngle += 5;
+                GameState->Player.FacingDirectionAngle += 10;
                 ddP.y = -1.0f;
             }
             if(Controller->MoveLeft.EndedDown)
             {
-                GameState->Player.FacingDirectionAngle += 5;
+                GameState->Player.FacingDirectionAngle += 10;
                 ddP.x = -1.0f;
             }
             if(Controller->MoveRight.EndedDown)
             {
-                GameState->Player.FacingDirectionAngle -= 5;
+                GameState->Player.FacingDirectionAngle -= 10;
                 ddP.x = 1.0f;
             }
         }
@@ -339,6 +339,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->Asteroids[4].Color = V3(1,1,1);
     }
     
+    // TODO(Eric): Collision with the player
+    // My first test of getting the tiles that the player _could_ collide with probably won't be good
+    // I'm thinking maybe we can just check whether it collides with any of the 3 points on the player
+    // likely the asteroids won't ever be smaller than the players length
     
     //
     // NOTE(Eric): Render
@@ -590,6 +594,20 @@ I ended this post short, because I'll be doing this refactor now. I hope.
 Blog Post 6 (starting 4/15/2020):
 
 Ok, do the refactor! Get into it! We can do this!
+
+Changed the 'map' to be the render width/height
+- turned out to be pretty easy, didn't take much time at all
+
+started to get into collision detection again
+- got 'colliding tile' to work; maybe show 'collision_tile_result' stuff
+-
+-
+
+fixed holding down input
+- there was a check in the process input for WasDown != IsDown to handle it
+-    added case for movement keys only
+
+
 
 */
 

@@ -17,6 +17,8 @@ struct screen_map
     u32 TileCountY;
     
     // NOTE(Eric): Index is: (Y-Index * TileCountX + X-Index)
+    // TODO(Eric): This is tough to work with because the entries are not sequential
+    // and there are a lot of empty spots. Need a different solution here.
     tile Tiles[4096];
 };
 

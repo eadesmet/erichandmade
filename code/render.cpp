@@ -282,18 +282,6 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map *Map)
     
     v3 PlayerColor = V3(0.8, 0.8, 0.8);
     
-    
-    // Test
-    v2 CollideStartP = Center - PLAYER_LENGTH_TO_CENTER;
-    
-    // TODO(Eric): This doesn't quite reach the top and left sides
-    // Maybe I could experiment with getting a single point from each octant of a circle
-    u32 CollideSize = PLAYER_LENGTH_TO_CENTER * 2;
-    
-    colliding_tiles_result CollidingTiles = GetTilesInSquare(Map, CollideStartP, CollideSize);
-    RenderCollidingTiles(Render, CollidingTiles);
-    // /Test
-    
     RenderLine(Render, Player->FrontP, PlayerTopP, 1, PlayerColor);
     RenderLine(Render, Player->FrontP, PlayerBottomP, 1, PlayerColor);
     RenderLine(Render, PlayerBottomP, PlayerTopP, 1, PlayerColor);
