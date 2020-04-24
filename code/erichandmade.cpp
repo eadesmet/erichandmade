@@ -4,7 +4,7 @@
 #include "render.cpp"
 
 //~ NOTE(Eric): Init functions
-internal player
+internal void
 InitPlayer(game_state *GameState)
 {
     player Result = {};
@@ -13,7 +13,7 @@ InitPlayer(game_state *GameState)
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
     
-    return(Result);
+    GameState->Player = Result;
 }
 
 internal void
@@ -21,22 +21,25 @@ InitAsteroids(game_state *GameState)
 {
     // TODO(Eric): Randomize all positions! (and size, and speed)
     v2 CenterMap = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+    v2 RenderMax = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
     
-    int AsteroidCount = 20;
-    for(int AsteroidIndex = 0;
+    u32 AsteroidCount = 10;
+    
+    GameState->AsteroidCount = 0;
+    for(u32 AsteroidIndex = 0;
         AsteroidIndex < ArrayCount(GameState->Asteroids) && AsteroidIndex < AsteroidCount;
         ++AsteroidIndex)
     {
         v2 RandomP = {};
         
-        RandomP.x = (real32)((AsteroidIndex*35) + 50);
+        RandomP.x = (real32)((AsteroidIndex*85) + 60);
         RandomP.y = (TILE_SIZE*2);
         
         asteroid Asteroid = {};
         
         Asteroid.CenterP = RandomP;
         Asteroid.StartP = Asteroid.CenterP;
-        Asteroid.EndP = CenterMap;
+        Asteroid.EndP = RenderMax - RandomP;
         
         Asteroid.Radius = ASTEROID_SMALL_R;
         Asteroid.State = ASTEROIDSTATE_ACTIVE;
@@ -48,6 +51,7 @@ InitAsteroids(game_state *GameState)
         //Asteroid.TileIndex = GetTileIndexAtPosition(&GameState->Map, Asteroid.CenterP);
         
         GameState->Asteroids[AsteroidIndex] = Asteroid;
+        GameState->AsteroidCount++;
     }
 }
 
@@ -64,7 +68,7 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     
     if (Distance > 1)
     {
-#if 0
+#if 11
         real32 MoveX = (dt / Distance) * DeltaP.x; // ????????
         real32 MoveY = (dt / Distance) * DeltaP.y; // ????????
         
@@ -93,127 +97,17 @@ CheckCollisionAsteroids(asteroid Ast1, asteroid Ast2)
     
     real32 Distance = SquareRoot(DeltaX*DeltaX + DeltaY*DeltaY);
     
-    if (Distance <= (Ast1.Radius + Ast2.Radius)) Result = true;
+    if (Distance <= ((Ast1.Radius) + (Ast2.Radius)))
+        Result = true;
     
     return(Result);
 }
 
-#if 0
 internal void
 CheckCollisions(game_state *GameState)
 {
-    // TODO(Eric): THIS IS ALL BAD, I DON't KNOW HOW ARRAYS OR HASHES WORK
-    
-    //Foreach Entity t
-    //  Calculate xmin and xmax for x position of entity
-    //  for x in xmin to xmax
-    //    calculate ymin and ymax for y position of entity
-    //    for y in ymin to y max
-    //      if KEY(x,y) is NOT inside of hash array of 'buckets'
-    //        initialize new collection with KEY(x,y) to buckets
-    //      else
-    //        for each Entity other in buckets KEY(x,y)
-    //          add to Maybe collision (other and t)
-    //      add t to buckets KEY(x,y)
-    //foreach possiblecollision in maybecollision
-    //    if really collide
-    //      do something
-    
-    real32 BucketSize = 20;
-    collision_hash CollisionBuckets[128]; // NEED TO INITIALIZE TO 0
-    collision PossibleCollisions[128]; // NEED TO INITIALIZE TO 0
-    
-    // NOTEs:
-    // Using Min and Max like this is creating a Square (bounding box) around our asteroids
-    // Each 'Bucket' contains an array of Asteroids that are inside that bucket
-    // PossibleCollisions is an array of (Ast1,Ast2) that are possibly colliding
-    
-    for (int EntityIndex = 0;
-         EntityIndex < ArrayCount(GameState->Asteroids);
-         EntityIndex++)
-    {
-        asteroid Asteroid = GameState->Asteroids[EntityIndex];
-        int MinX = (int)(Asteroid.CenterP.x - Asteroid.Radius / BucketSize);
-        int MaxX = (int)(Asteroid.CenterP.x + Asteroid.Radius / BucketSize);
-        for (int x = MinX;
-             x < MaxX;
-             x++)
-        {
-            int MinY = (int)(Asteroid.CenterP.y - Asteroid.Radius / BucketSize);
-            int MaxY = (int)(Asteroid.CenterP.y + Asteroid.Radius / BucketSize);
-            for (int y = MinY;
-                 y < MaxY;
-                 y++)
-            {
-                // TODO(Eric): Better hash function?
-                u32 HashValue = x*6 + y*2;
-                u32 HashSlot = HashValue & (ArrayCount(CollisionBuckets) - 1);
-                Assert(HashSlot < ArrayCount(CollisionBuckets));
-                collision_hash *Hash = CollisionBuckets + HashSlot;
-                if (!(&Hash->Asteroids[0])) // If Asteroids is NOT EMPTY
-                {
-                    // For each Asteroid in this Bucket (since it's not empty)
-                    // - Add a new entry to PossibleCollisions with this asteroid and Asteroid
-                    for (asteroid *OtherAsteroid = Hash->Asteroids;
-                         &OtherAsteroid; // While the pointer is not 0, right?
-                         OtherAsteroid++)
-                    {
-                        collision *CollisionsAddress = &PossibleCollisions[0];
-                        collision *NextSlot;
-                        do
-                        {
-                            NextSlot = CollisionsAddress++; // no idea if this works
-                        } while (!NextSlot);
-                        collision NewCollision = {};
-                        NewCollision.Ast1 = *OtherAsteroid;
-                        NewCollision.Ast2 = Asteroid;
-                        *NextSlot = NewCollision;
-                        
-                        //for (int PossibleIndex = 0;
-                        //PossibleIndex < ArrayCount(PossibleCollisions);
-                        //PossibleIndex++)
-                        //{
-                        //collision *PossibleCollision = &PossibleCollisions[PossibleIndex];
-                        //if (!PossibleCollision)
-                        //{
-                        //PossibleCollisions[PossibleIndex] = collision{OtherAsteroid, Asteroid};
-                    }
-                }
-                else
-                {
-                    // Initialize new thing for Hash
-                    //Hash->Asteroids = {}; //?
-                }
-                
-                // (Always) Append Asteroid to CollisionBuckets
-                for (int AsteroidIndex = 0;
-                     AsteroidIndex < ArrayCount(Hash->Asteroids);
-                     AsteroidIndex++)
-                {
-                    if (Hash->Asteroids[AsteroidIndex].State == ASTEROIDSTATE_INACTIVE)
-                    {
-                        Hash->Asteroids[AsteroidIndex] = Asteroid;
-                        break;
-                    }
-                    
-                }
-            }
-        }
-    }
-    
-    
-    for (int PossibleIndex = 0;
-         PossibleIndex < ArrayCount(PossibleCollisions);
-         PossibleIndex++)
-    {
-        // CheckCollision(collision)
-    }
     
 }
-#endif
-
-
-
 
 
 
@@ -238,7 +132,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         InitMap(GameState);
         
         // Init Player
-        GameState->Player = InitPlayer(GameState);
+        InitPlayer(GameState);
         
         // Init Asteroids
         InitAsteroids(GameState);
@@ -262,81 +156,83 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     }
     
     
-    // Get Input from Controllers and Adjust player's movement
-    for(int ControllerIndex = 0;
-        ControllerIndex < ArrayCount(Input->Controllers);
-        ++ControllerIndex)
+    
+    game_controller_input *Controller = GetController(Input, 0);
+    v2 ddP = {};
+    
+    // TODO(Eric): Player Movement does NOT feel good, and is based on framerate
+    if(Controller->MoveUp.EndedDown)
     {
-        game_controller_input *Controller = GetController(Input, ControllerIndex);
-        
-        v2 ddP = {};
-        if(Controller->IsAnalog)
-        {
-            // NOTE(casey): Use analog movement tuning
-            ddP = v2{Controller->StickAverageX, Controller->StickAverageY};
-        }
-        else
-        {
-            // NOTE(Eric): Player Movement is currently based on framerate!
-            // TODO(Eric): Player Movement does NOT feel good
-            // NOTE(casey): Use digital movement tuning
-            if(Controller->MoveUp.EndedDown)
-            {
-                GameState->Player.FacingDirectionAngle -= 10;
-                ddP.y = 1.0f;
-            }
-            if(Controller->MoveDown.EndedDown)
-            {
-                GameState->Player.FacingDirectionAngle += 10;
-                ddP.y = -1.0f;
-            }
-            if(Controller->MoveLeft.EndedDown)
-            {
-                GameState->Player.FacingDirectionAngle += 10;
-                ddP.x = -1.0f;
-            }
-            if(Controller->MoveRight.EndedDown)
-            {
-                GameState->Player.FacingDirectionAngle -= 10;
-                ddP.x = 1.0f;
-            }
-        }
-        
-        // Update players position
-        GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
-                                      RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
+        GameState->Player.FacingDirectionAngle -= 10;
+        ddP.y = 1.0f;
+    }
+    if(Controller->MoveDown.EndedDown)
+    {
+        GameState->Player.FacingDirectionAngle += 10;
+        ddP.y = -1.0f;
+    }
+    if(Controller->MoveLeft.EndedDown)
+    {
+        GameState->Player.FacingDirectionAngle += 10;
+        ddP.x = -1.0f;
+    }
+    if(Controller->MoveRight.EndedDown)
+    {
+        GameState->Player.FacingDirectionAngle -= 10;
+        ddP.x = 1.0f;
     }
     
+    // Update players position
+    GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
+                                  RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
+    
+    
+    // NOTE(Eric): Collide Asteroids with eachother
+    for(u32 AsteroidIndex1 = 0;
+        AsteroidIndex1 < GameState->AsteroidCount;
+        ++AsteroidIndex1)
+    {
+        for(u32 AsteroidIndex2 = AsteroidIndex1;
+            AsteroidIndex2 < GameState->AsteroidCount;
+            ++AsteroidIndex2)
+        {
+            if (AsteroidIndex1 == AsteroidIndex2)
+                continue;
+            
+            asteroid *Ast1 = &GameState->Asteroids[AsteroidIndex1];
+            asteroid *Ast2 = &GameState->Asteroids[AsteroidIndex2];
+            
+            if (CheckCollisionAsteroids(*Ast1, *Ast2))
+            {
+                // Calculate new EndP for both
+                // First attempt - just swap the end points
+                // - it didn't  actually enforce the asteroids to never go inside of eachother..
+                
+                // Second attempt - set the EndP of the first to the sum of both
+                // Also no good, obviously
+                Ast1->EndP += Ast2->EndP;
+                
+                // TODO(Eric):
+                // - Differentiate between a Position Vector and a Free Vector
+                // -   Position Vector - bound to a specific origin
+                // -   Free Vector (or just Vector) - not bound, and can be applied to any point
+                // Read the Real-time collision detection book, chapter 3
+            }
+        }
+    }
     
     // NOTE(Eric): Move Asteroids
-    for(int AsteroidIndex = 0;
-        AsteroidIndex < ArrayCount(GameState->Asteroids);
+    for(u32 AsteroidIndex = 0;
+        AsteroidIndex < GameState->AsteroidCount;
         ++AsteroidIndex)
     {
-        if (&GameState->Asteroids[AsteroidIndex])
+        asteroid *Ast = &GameState->Asteroids[AsteroidIndex];
+        if (Ast)
         {
-            MoveAsteroid(&GameState->Asteroids[AsteroidIndex], Input->dtForFrame);
+            MoveAsteroid(Ast, Input->dtForFrame);
         }
         else
             break;
-    }
-    
-    
-    // TODO(Eric): On Collision, Change the EndP of the Asteroid! That's it!!! HAHHAHAHAHAHHAHHH
-    // We can do a calculation based on the line of StartP -> EndP of each asteroid
-    // and calculate a new EndP for each one
-    bool32 SampleCollision = CheckCollisionAsteroids(GameState->Asteroids[0], GameState->Asteroids[4]);
-    if (SampleCollision)
-    {
-        GameState->Asteroids[0].Color = V3(1,.5,0);
-        GameState->Asteroids[4].Color = V3(1,.5,0);
-        
-        GameState->Asteroids[0].EndP = V2(TILE_SIZE, 200);
-    }
-    else
-    {
-        GameState->Asteroids[0].Color = V3(1,1,1);
-        GameState->Asteroids[4].Color = V3(1,1,1);
     }
     
     // TODO(Eric): Collision with the player
@@ -639,14 +535,6 @@ It all has to be calculated up front, and then rendered with the new calculated 
 //~ TODO LIST
 /*
 
-Change rendering to be mapped only to the Map
-     - I think essentially what I have to do here..
-- To say that OFFSET_X and OFFSET_Y is my new 0,0
-- and that MAP_WIDTH + OFFSET_X is my new Max Width
-- and that MAP_HEIGHT + OFFSET_Y is my new Max Height
-
--- The functionality we want out of this, is asteroids to be half drawn as they come in to the map
-
 Asteroid Movement
 - Going to have a random starting position and an end position(across from start, nearly crossing player)
 - Random speed (set asteroid speeds, slow, med, fast?)
@@ -670,7 +558,7 @@ Improve player movement
 Player shooting
 
 
-
+Remove all these blasted comments everywhere!
 
 
 

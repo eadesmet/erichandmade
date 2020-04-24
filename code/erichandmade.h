@@ -61,12 +61,6 @@ struct asteroid
     v2 TileIndex;
 };
 
-struct collision
-{
-    asteroid Ast1;
-    asteroid Ast2;
-};
-
 struct collision_hash
 {
     asteroid Asteroids[128]; // Size here is the max number of Asteroids in a single bucket
@@ -84,6 +78,7 @@ struct game_state
     
     player Player;
     
+    u32 AsteroidCount;
     asteroid Asteroids[256];
     
     // NOTE(Eric): I beleive this has to come last in game_state so it doesn't collide
