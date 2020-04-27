@@ -1,5 +1,6 @@
 
 #include "erichandmade.h"
+#include "random.h"
 #include "tile.cpp"
 #include "render.cpp"
 
@@ -20,10 +21,58 @@ internal void
 InitAsteroids(game_state *GameState)
 {
     // TODO(Eric): Randomize all positions! (and size, and speed)
+    random_series Series = RandomSeed(321);
+    
     v2 CenterMap = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     v2 RenderMax = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
     
-    u32 AsteroidCount = 10;
+#define ASTEROID_COLLISION_TEST 1
+#if ASTEROID_COLLISION_TEST
+    
+    v2 P1 = V2(100, 100);
+    v2 P2 = V2(300, 200);
+    v2 P3 = V2(100, 100);
+    
+    GameState->AsteroidCount = 0;
+    
+    asteroid Asteroid = {};
+    Asteroid.CenterP = P1;
+    Asteroid.StartP = Asteroid.CenterP;
+    Asteroid.EndP = P2;
+    Asteroid.Radius = ASTEROID_SMALL_R;
+    Asteroid.State = ASTEROIDSTATE_ACTIVE;
+    Asteroid.Speed = ASTEROIDSPEED_SLOW;
+    Asteroid.Color = V3(1,1,1);
+    GameState->Asteroids[0] = Asteroid;
+    GameState->AsteroidCount++;
+    
+    Asteroid = {};
+    Asteroid.CenterP = P2;
+    Asteroid.StartP = Asteroid.CenterP;
+    Asteroid.EndP = P2;
+    Asteroid.Radius = ASTEROID_SMALL_R;
+    Asteroid.State = ASTEROIDSTATE_ACTIVE;
+    Asteroid.Speed = ASTEROIDSPEED_SLOW;
+    Asteroid.Color = V3(1,1,1);
+    GameState->Asteroids[1] = Asteroid;
+    GameState->AsteroidCount++;
+    /*
+    Asteroid = {};
+    Asteroid.CenterP = P2;
+    Asteroid.StartP = Asteroid.CenterP;
+    Asteroid.EndP = P1;
+    Asteroid.Radius = ASTEROID_SMALL_R;
+    Asteroid.State = ASTEROIDSTATE_ACTIVE;
+    Asteroid.Speed = ASTEROIDSPEED_SLOW;
+    Asteroid.Color = V3(1,1,1);
+    GameState->Asteroids[2] = Asteroid;
+    GameState->AsteroidCount++;
+    */
+    
+    
+    
+#else
+    u32 AsteroidCount = 2;
     
     GameState->AsteroidCount = 0;
     for(u32 AsteroidIndex = 0;
@@ -32,8 +81,8 @@ InitAsteroids(game_state *GameState)
     {
         v2 RandomP = {};
         
-        RandomP.x = (real32)((AsteroidIndex*85) + 60);
-        RandomP.y = (TILE_SIZE*2);
+        RandomP.x = RandomBetween(&Series, (real32)0, (real32)600);
+        RandomP.y = RandomBetween(&Series, (real32)0, (real32)600);
         
         asteroid Asteroid = {};
         
@@ -53,6 +102,7 @@ InitAsteroids(game_state *GameState)
         GameState->Asteroids[AsteroidIndex] = Asteroid;
         GameState->AsteroidCount++;
     }
+#endif
 }
 
 internal void
@@ -68,14 +118,14 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     
     if (Distance > 1)
     {
-#if 11
+#if 1
         real32 MoveX = (dt / Distance) * DeltaP.x; // ????????
         real32 MoveY = (dt / Distance) * DeltaP.y; // ????????
         
-        Asteroid->CenterP.x += MoveX*Asteroid->Speed;
-        Asteroid->CenterP.y += MoveY*Asteroid->Speed;
+        Asteroid->CenterP.x += (real32)(MoveX*Asteroid->Speed*5.5);
+        Asteroid->CenterP.y += (real32)(MoveY*Asteroid->Speed*5.5);
 #else
-        Asteroid->CenterP = Mix(Asteroid->CenterP, Asteroid->EndP, .01f);
+        Asteroid->CenterP = Mix(Asteroid->CenterP, Asteroid->EndP, .03f);
 #endif
     }
     else
@@ -210,13 +260,48 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 
                 // Second attempt - set the EndP of the first to the sum of both
                 // Also no good, obviously
-                Ast1->EndP += Ast2->EndP;
+                //Ast1->EndP += Ast2->EndP;
                 
                 // TODO(Eric):
                 // - Differentiate between a Position Vector and a Free Vector
                 // -   Position Vector - bound to a specific origin
                 // -   Free Vector (or just Vector) - not bound, and can be applied to any point
                 // Read the Real-time collision detection book, chapter 3
+                
+                // So the _direction_ needs to change, and be calculated from each other.
+                // The angle of both new directions has to be away from eachother, or > 0
+                
+                // Third attempt - calculate deltax and deltay, and subtract
+                // If the Center was the Origin, this would be easier!!
+                // - Then we wouldn't have to check all bounds? right?
+                /*
+                v2 P1d = V2((Ast1->StartP.x - Ast1->EndP.x), ((Ast1->StartP.y - Ast1->EndP.y)));
+                v2 P2d = V2((Ast2->StartP.x - Ast2->EndP.x), ((Ast2->StartP.y - Ast2->EndP.y)));
+                
+                // Reset startP to current Pos
+                Ast1->StartP = Ast1->CenterP;
+                Ast2->StartP = Ast2->CenterP;
+                
+                Ast1->EndP = Ast1->EndP - P1d;
+                Ast2->EndP = Ast2->EndP - P1d;
+*/
+                
+                // Fourth attempt - If it's going up and to the right, swap X
+                bool32 PosNegDiagonal = (Ast1->StartP < Ast1->EndP) || (Ast1->StartP > Ast1->EndP);
+                if (PosNegDiagonal)
+                {
+                    Ast1->EndP.x = Ast1->StartP.x;
+                    Ast1->StartP = Ast1->CenterP;
+                }
+                
+                bool32 UpRight2 = (Ast2->StartP < Ast2->EndP);
+                if (UpRight2)
+                {
+                    Ast2->EndP.x = Ast2->StartP.x;
+                }
+                
+                
+                
             }
         }
     }
@@ -275,11 +360,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             break;
     }
     
-    
+    /*
     // Testing random square for colliding tiles
     colliding_tiles_result CollidingTiles = GetTilesInSquare(&GameState->Map, V2(62,62), 90);
     RenderCollidingTiles(Render, CollidingTiles);
+    */
     
+    RenderCircle(Render, V2(500,300), 200, 1, V3(1,1,1));
 }
 
 
@@ -556,6 +643,9 @@ Improve player movement
 - Holding down the button continuosluyouyyyy moves
 
 Player shooting
+- I would like to build a ray tracer for this.
+-  Having a line draw from the frontP on the players angle would be a start
+
 
 
 Remove all these blasted comments everywhere!

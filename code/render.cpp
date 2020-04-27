@@ -314,7 +314,7 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map *Map)
 inline void
 RenderAsteroid(render_buffer* Render, screen_map *Map, asteroid* Asteroid)
 {
-    if (Asteroid->State != ASTEROIDSTATE_INACTIVE)
+    //if (Asteroid->State != ASTEROIDSTATE_INACTIVE)
     {
         tile CollidingTile = GetTileAtPosition(Map, Asteroid->CenterP);
         if (CollidingTile.BottomLeft != V2(0,0)) // TODO(ERIC): do something here for a tile that wasn't found
@@ -331,6 +331,8 @@ RenderAsteroidPositions(render_buffer* Render, asteroid* Asteroid)
     
     RenderSquare(Render, Asteroid->StartP, 2, V3(0,0,1));
     RenderSquare(Render, Asteroid->EndP, 2, V3(0,1,0));
+    
+    RenderLine(Render, Asteroid->StartP, Asteroid->EndP, 2, V3(.8,.8,.8));
 }
 
 

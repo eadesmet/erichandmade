@@ -117,6 +117,22 @@ operator!=(v2 P1, v2 P2)
     return(Result);
 }
 
+inline bool32
+operator>(v2 P1, v2 P2)
+{
+    bool32 Result = (P1.x > P2.x) && (P1.y > P2.y);
+    
+    return(Result);
+}
+
+inline bool32
+operator<(v2 P1, v2 P2)
+{
+    bool32 Result = (P1.x < P2.x) && (P1.y < P2.y);
+    
+    return(Result);
+}
+
 inline real32
 Square(real32 A)
 {
