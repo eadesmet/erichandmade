@@ -183,15 +183,15 @@ union v3
 {
     struct
     {
-        real32 x;
-        real32 y;
-        real32 z;
-    };
-    struct
-    {
         real32 r;
         real32 g;
         real32 b;
+    };
+    struct
+    {
+        real32 x;
+        real32 y;
+        real32 z;
     };
     real32 E[3];
 };

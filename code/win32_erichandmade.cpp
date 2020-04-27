@@ -8,61 +8,6 @@
 #include "win32_erichandmade.h"
 
 
-// NOTE(casey): XInputGetState
-#define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
-typedef X_INPUT_GET_STATE(x_input_get_state);
-X_INPUT_GET_STATE(XInputGetStateStub)
-{
-    return(ERROR_DEVICE_NOT_CONNECTED);
-}
-global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
-#define XInputGetState XInputGetState_
-
-// NOTE(casey): XInputSetState
-#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
-typedef X_INPUT_SET_STATE(x_input_set_state);
-X_INPUT_SET_STATE(XInputSetStateStub)
-{
-    return(ERROR_DEVICE_NOT_CONNECTED);
-}
-global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
-#define XInputSetState XInputSetState_
-
-
-internal void
-Win32LoadXInput(void)
-{
-    // TODO(casey): Test this on Windows 8
-    HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
-    if(!XInputLibrary)
-    {
-        // TODO(casey): Diagnostic
-        XInputLibrary = LoadLibraryA("xinput9_1_0.dll");
-    }
-    
-    if(!XInputLibrary)
-    {
-        // TODO(casey): Diagnostic
-        XInputLibrary = LoadLibraryA("xinput1_3.dll");
-    }
-    
-    if(XInputLibrary)
-    {
-        XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
-        if(!XInputGetState) {XInputGetState = XInputGetStateStub;}
-        
-        XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
-        if(!XInputSetState) {XInputSetState = XInputSetStateStub;}
-        
-        // TODO(casey): Diagnostic
-        
-    }
-    else
-    {
-        // TODO(casey): Diagnostic
-    }
-}
-
 inline FILETIME
 Win32GetLastWriteTime(char *Filename)
 {
@@ -89,9 +34,6 @@ Win32BuildEXEPathFileName(win32_state *State, char *FileName,
 internal void
 Win32GetEXEFileName(win32_state *State)
 {
-    // NOTE(casey): Never use MAX_PATH in code that is user-facing, because it
-    // can be dangerous and lead to bad results.
-    // NOTE(ERIC): Beacuse MAX_PATH is actually incorrect under certain circumstances.
     DWORD SizeOfFilename = GetModuleFileNameA(0, State->EXEFileName, sizeof(State->EXEFileName));
     State->OnePastLastEXEFileNameSlash = State->EXEFileName;
     for(char *Scan = State->EXEFileName;
@@ -254,9 +196,7 @@ Win32PlayBackInput(win32_state *State, game_input *NewInput)
     }
 }
 
-
-
-
+//~ NOTE(Eric): GameCode Loading/Unloading
 internal win32_game_code
 Win32LoadGameCode(char *SourceDLLName, char *TempDLLName)
 {
@@ -883,7 +823,7 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                     //              &RenderBuffer.Bitmap, DIB_RGB_COLORS, SRCCOPY);
                     ReleaseDC(Window, DeviceContext);
                     
-#if 1
+#if 0
                     u64 EndCycleCount = __rdtsc();
                     u64 CyclesElapsed = EndCycleCount - LastCycleCount;
                     LastCycleCount = EndCycleCount;

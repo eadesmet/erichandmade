@@ -22,9 +22,7 @@ InitMap(game_state *GameState)
     }
 }
 
-
 // NOTE(Eric): 'Is In Rectangle'? (Instead of being dependent on the tilemap)?
-
 inline tile
 GetTileAtPosition(screen_map *Map, v2 Pos)
 {
@@ -91,44 +89,3 @@ GetTilesInSquare(screen_map *Map, v2 Pos, u32 SquareSize)
     
     return(Result);
 }
-
-#if 0
-inline v2
-GetTileIndexAtPosition(screen_map *Map, v2 Pos)
-{
-    v2 Result = {};
-    
-    bool32 Found = 0;
-    u16 IndexY = 0;
-    
-    while(!Found)
-    {
-        for (u16 IndexX = 0; IndexX < TILE_COUNT_X; ++IndexX)
-        {
-            tile Tile = Map->Tiles[IndexY][IndexX];
-            if ((Pos.x >= Tile.BottomLeft.x) &&
-                ((Tile.BottomLeft.x + TILE_SIZE-1) >= Pos.x))
-            {
-                if ((Pos.y >= Tile.BottomLeft.y) &&
-                    ((Tile.BottomLeft.y + TILE_SIZE-1) >= Pos.y))
-                {
-                    Result = V2(IndexX, IndexY);
-                    Found = true;
-                    break;
-                }
-            }
-        }
-        ++IndexY;
-    }
-    
-    return (Result);
-}
-
-inline void
-RecalculatePosition()
-{
-    // Take a position in Pixels, and calculate postition relative to the tile?
-    //?????????????
-    
-}
-#endif

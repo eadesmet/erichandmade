@@ -8,10 +8,6 @@
 #include "tile.h"
 
 
-global_variable v2 MinV2 = v2{0,0};
-//global_variable v2 MaxV2 = v2{0,0};
-
-
 #define PLAYER_HALFWIDTH 10
 #define PLAYER_WIDTH 20
 #define PLAYER_LENGTH_TO_CENTER 25
@@ -30,47 +26,22 @@ enum asteroid_state
     ASTEROIDSTATE_ACTIVE = 0x1,
 };
 
-// Asteroid Sized (Radius)
-#define ASTEROID_SMALL_R 20
-#define ASTEROID_MEDIUM_R 40
-#define ASTEROID_LARGE_R 80
-
-// Asteroid Speed
-#define ASTEROIDSPEED_SLOW 3;
-
 struct asteroid
 {
-    v2 CenterP;
-    real32 Radius;
+    v2 CenterP; // 'Center' of the asteroid
+    v2 StartP;  // Start Position of movement
+    v2 EndP;    // End Position of movement
     
-    v2 StartP;
-    v2 EndP;
+    real32 Radius;
     real32 Speed;
     
     asteroid_state State;
     
     v3 Color;
-    
-    // NOTE(Eric): Testing this out, not sure what I'm doing
-    // This is the Position in the Tile, relative to Tile.BottomLeft
-    // Values must be Greater than 0, Less than TileSize
-    // If they are out of those bounds, needs to change Tiles
-    v2 TileRelP;
-    
-    // X and Y Index of which Tile we are on
-    v2 TileIndex;
-};
-
-struct collision_hash
-{
-    asteroid Asteroids[128]; // Size here is the max number of Asteroids in a single bucket
-    
-    collision_hash *NextInHash;
 };
 
 struct game_state
 {
-    // NOTE(Eric): These are to compare against the Render width/height to update the array
     s32 RenderWidth;
     s32 RenderHeight;
     real32 RenderHalfWidth;
@@ -78,11 +49,10 @@ struct game_state
     
     player Player;
     
-    u32 AsteroidCount;
+    u32 AsteroidCount; // Current Count, not total
     asteroid Asteroids[256];
     
-    // NOTE(Eric): I beleive this has to come last in game_state so it doesn't collide
-    // since it's varying in size
+    // NOTE(Eric): Must be last
     screen_map Map;
 };
 
@@ -123,9 +93,24 @@ Mix(real32 A, real32 B, real32 Amount)
     
     return(Result);
 }
-
+inline real32
+Lerp(real32 A, real32 B, real32 Amount)
+{
+    real32 Result = (1-Amount) * A + Amount * B;
+    
+    return(Result);
+}
 inline v2
 Mix(v2 A, v2 B, real32 Amount)
+{
+    v2 Result = {};
+    Result.x = (1-Amount) * A.x + Amount * B.x;
+    Result.y = (1-Amount) * A.y + Amount * B.y;
+    
+    return(Result);
+}
+inline v2
+Lerp(v2 A, v2 B, real32 Amount)
 {
     v2 Result = {};
     Result.x = (1-Amount) * A.x + Amount * B.x;
