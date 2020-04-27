@@ -32,8 +32,10 @@ GetTileAtPosition(screen_map *Map, v2 Pos)
     bool32 Found = 0;
     u16 IndexY = 0;
     
-    if (Map->TileCountX * TILE_SIZE < Pos.x ||
-        Map->TileCountY * TILE_SIZE < Pos.y)
+    if (Map->TileCountX * TILE_SIZE > Pos.x ||
+        Map->TileCountY * TILE_SIZE > Pos.y ||
+        0 < Pos.x ||
+        0 < Pos.y)
     {
         // TODO(ERIC): do something here for a tile that wasn't found
         tile NullTile = {};

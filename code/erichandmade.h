@@ -36,7 +36,7 @@ enum asteroid_state
 #define ASTEROID_LARGE_R 80
 
 // Asteroid Speed
-#define ASTEROIDSPEED_SLOW 30;
+#define ASTEROIDSPEED_SLOW 3;
 
 struct asteroid
 {

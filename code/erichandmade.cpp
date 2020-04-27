@@ -119,11 +119,16 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     if (Distance > 1)
     {
 #if 1
-        real32 MoveX = (dt / Distance) * DeltaP.x; // ????????
-        real32 MoveY = (dt / Distance) * DeltaP.y; // ????????
+        v2 ddP = {};
         
-        Asteroid->CenterP.x += (real32)(MoveX*Asteroid->Speed*5.5);
-        Asteroid->CenterP.y += (real32)(MoveY*Asteroid->Speed*5.5);
+        ddP.x = (DeltaP.x/(dt*60));
+        ddP.y = (DeltaP.y/(dt*60));
+        
+        real32 MoveX = ddP.x * (dt * Asteroid->Speed);
+        real32 MoveY = ddP.y * (dt * Asteroid->Speed);
+        
+        Asteroid->CenterP.x += (real32)(MoveX);
+        Asteroid->CenterP.y += (real32)(MoveY);
 #else
         Asteroid->CenterP = Mix(Asteroid->CenterP, Asteroid->EndP, .03f);
 #endif
@@ -287,6 +292,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 */
                 
                 // Fourth attempt - If it's going up and to the right, swap X
+                /*
                 bool32 PosNegDiagonal = (Ast1->StartP < Ast1->EndP) || (Ast1->StartP > Ast1->EndP);
                 if (PosNegDiagonal)
                 {
@@ -299,8 +305,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 {
                     Ast2->EndP.x = Ast2->StartP.x;
                 }
+                */
+                
+                // Fifth attempt - calculating the Normal from the circle
+                // NOTE(Eric): THIS IS ASSUMING THE ASTEROIDS ARE THE SAME SIZE
+                v2 Normal = (Ast2->CenterP - Ast1->CenterP) * 0.5; // collision point from the center of Ast2
+                v2 IncomingVector = (Normal) - (Ast1->CenterP);
+                
+                real32 DotProd = Inner(Normal, IncomingVector);
+                
+                v2 ReflectionVector = (IncomingVector - (2 * DotProd) * Normal);
+                
+                Ast1->EndP = ReflectionVector;
                 
                 
+                RenderLine(Render, Ast2->CenterP, ReflectionVector, 1, V3(0,.5,1));
                 
             }
         }
@@ -590,7 +609,13 @@ fixed holding down input
 - there was a check in the process input for WasDown != IsDown to handle it
 -    added case for movement keys only
 
-
+!!!!!!!!!
+I think it's time to start fresh and delete a lot of stuff I've done over the past 2 weeks
+All of the current asteroid stuff, I think, is just bad, and I'm kind of flailing around
+I also think this is the reason that I've been demotivated.. it's just a bunch of cruft to deal with
+I need to start back to simple steps. Get one 'asteroid' on the screen. move it around. collide with something.
+I also really want to flesh out the map / coordinate system.
+!!!!!!!!!
 
 */
 
