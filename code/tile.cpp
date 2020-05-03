@@ -89,3 +89,29 @@ GetTilesInSquare(screen_map *Map, v2 Pos, u32 SquareSize)
     
     return(Result);
 }
+
+
+inline v2
+MetersToGamePoint(game_state *GameState, v2 PointInMeters)
+{
+    v2 Result = {};
+    
+    real32 MetersToPixels = 10;
+    Result = PointInMeters * MetersToPixels;
+    
+    return(Result);
+}
+
+inline v2
+GamePointToScreenPoint(game_state *GameState, v2 GamePoint)
+{
+    // GamePoint = Coordinate System in our Game with the center being the origin
+    // ScreenPoint/Result = Coordinate in pixels on the screen.
+    v2 Result = {};
+    
+    v2 ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+    Result = GamePoint + ScreenCenter;
+    
+    return(Result);
+    
+}

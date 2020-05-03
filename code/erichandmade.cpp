@@ -37,7 +37,7 @@ InitAsteroids(game_state *GameState)
     Asteroid.StartP = Asteroid.CenterP;
     Asteroid.EndP = P2;
     Asteroid.Radius = 30;
-    Asteroid.State = ASTEROIDSTATE_ACTIVE;
+    Asteroid.State = AsteroidState_Active;
     Asteroid.Speed = 30;
     Asteroid.Color = V3(1,1,1);
     GameState->Asteroids[0] = Asteroid;
@@ -48,7 +48,7 @@ InitAsteroids(game_state *GameState)
     Asteroid.StartP = Asteroid.CenterP;
     Asteroid.EndP = P2;
     Asteroid.Radius = 30;
-    Asteroid.State = ASTEROIDSTATE_ACTIVE;
+    Asteroid.State = AsteroidState_Active;
     Asteroid.Speed = 30;
     Asteroid.Color = V3(1,1,1);
     GameState->Asteroids[1] = Asteroid;
@@ -93,7 +93,7 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     else
     {
         Asteroid->CenterP = Asteroid->EndP;
-        Asteroid->State = ASTEROIDSTATE_INACTIVE;
+        Asteroid->State = AsteroidState_Inactive;
     }
 }
 
@@ -196,6 +196,49 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                V2(GameState->RenderHalfWidth, (real32)GameState->RenderHeight), 1, CrosshairColor);
     
     RenderPlayer(Render, &GameState->Player, &GameState->Map);
+    
+    
+    
+    v2 TestNewCoord = V2(-20,40);
+    v2 ScreenNewCoord = GamePointToScreenPoint(GameState, TestNewCoord);
+    RenderSquare(Render, ScreenNewCoord, 12, V3(0,0.5f,1));
+    
+    v2 TestMetersCoord = V2(-4,4); // Should be the same Y, but to the left a bit more
+    v2 ScreenNewCoord2 = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestMetersCoord));
+    RenderSquare(Render, ScreenNewCoord2, 12, V3(0,0.5f,1));
+    
+    v2 Origin = GamePointToScreenPoint(GameState, V2(0,0));
+    RenderSquare(Render, Origin, 12, V3(1,0.5f,1));
+    
+    
+    poly6 TestPoly = {};
+    TestPoly.CenterP = V2(-18, -8); // In Meters
+    TestPoly.OuterPoints[0] = V2(0, 2); // Relative to the Center.
+    TestPoly.OuterPoints[1] = V2(1, 3);
+    TestPoly.OuterPoints[2] = V2(2, 0); // front
+    TestPoly.OuterPoints[3] = V2(0, -2);
+    TestPoly.OuterPoints[4] = V2(-2, 1);
+    TestPoly.OuterPoints[5] = V2(-1, 1); // Then 5 connects to 0
+    
+    for (u32 PolyPIndex = 0; PolyPIndex < ArrayCount(TestPoly.OuterPoints); PolyPIndex++)
+    {
+        if (PolyPIndex != 5)
+        {
+            v2 P1 = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP + TestPoly.OuterPoints[PolyPIndex]));
+            v2 P2 = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP + TestPoly.OuterPoints[PolyPIndex+1]));
+            RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
+        }
+        else
+        {
+            v2 P1 = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP + TestPoly.OuterPoints[PolyPIndex]));
+            v2 P2 = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP + TestPoly.OuterPoints[0]));
+            RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
+        }
+    }
+    
+    
+    
+    
 }
 
 

@@ -22,8 +22,8 @@ struct player
 
 enum asteroid_state
 {
-    ASTEROIDSTATE_INACTIVE = 0x0,
-    ASTEROIDSTATE_ACTIVE = 0x1,
+    AsteroidState_Inactive = 0x0,
+    AsteroidState_Active = 0x1,
 };
 
 struct asteroid
@@ -38,6 +38,13 @@ struct asteroid
     asteroid_state State;
     
     v3 Color;
+};
+
+// TODO(Eric): Test something like this out for asteroids
+struct poly6
+{
+    v2 CenterP;
+    v2 OuterPoints[6];
 };
 
 struct game_state

@@ -1,7 +1,7 @@
 #ifndef TILE_H
 #define TILE_H
 
-#define TILE_SIZE 20
+#define TILE_SIZE 40
 
 struct tile
 {
@@ -17,9 +17,15 @@ struct screen_map
     u32 TileCountY;
     
     // NOTE(Eric): Index is: (Y-Index * TileCountX + X-Index)
-    // TODO(Eric): This is tough to work with because the entries are not sequential
-    // and there are a lot of empty spots. Need a different solution here.
     tile Tiles[4096];
+    
+    
+    /*
+     A resolution of 1920 x 1080, tile size of 20, 4096 is not enough space
+    
+    */
+    //c 1920*1080
+    
 };
 
 struct colliding_tiles_result
