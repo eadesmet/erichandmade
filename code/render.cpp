@@ -80,20 +80,6 @@ RenderSquare(render_buffer *Render, v2 Pos, u32 Size, v3 Color)
 #endif
 }
 
-//~ NOTE(Eric): Debug Rendering
-inline void
-RenderCollidingTiles(render_buffer *Render, colliding_tiles_result CollidingTiles)
-{
-    if (CollidingTiles.Count > 0)
-    {
-        for(u32 Index = 0; Index < CollidingTiles.Count; ++Index)
-        {
-            v2 Position = CollidingTiles.Tiles[Index].BottomLeft;
-            RenderSquare(Render, Position, TILE_SIZE, V3(.5,.7,.5));
-        }
-    }
-}
-
 //~ NOTE(Eric): Line
 inline void
 PlotLineLow(render_buffer *Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
@@ -245,10 +231,10 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 
 
 //~ NOTE(Eric): Player
 inline void
-RenderPlayer(render_buffer* Render, player* Player, screen_map *Map)
+RenderPlayer(game_state *GameState, render_buffer* Render, player* Player, screen_map *Map)
 {
-    v2 Center = Player->CenterP;
-    v2 Front = Player->FrontP;
+    v2 Center = GamePointToScreenPoint(GameState, Player->CenterP);
+    v2 Front = GamePointToScreenPoint(GameState, Player->FrontP);
     
     real32 OppositeAngle;
     real32 OppositeAngleTop;
@@ -282,8 +268,8 @@ RenderPlayer(render_buffer* Render, player* Player, screen_map *Map)
     
     v3 PlayerColor = V3(0.8, 0.8, 0.8);
     
-    RenderLine(Render, Player->FrontP, PlayerTopP, 1, PlayerColor);
-    RenderLine(Render, Player->FrontP, PlayerBottomP, 1, PlayerColor);
+    RenderLine(Render, Front, PlayerTopP, 1, PlayerColor);
+    RenderLine(Render, Front, PlayerBottomP, 1, PlayerColor);
     RenderLine(Render, PlayerBottomP, PlayerTopP, 1, PlayerColor);
     
     
@@ -338,7 +324,7 @@ RenderAsteroidPositions(render_buffer* Render, asteroid* Asteroid)
 
 //~ NOTE(Eric): Map
 inline void
-RenderMap(render_buffer* Render, screen_map *Map)
+RenderMap(game_state *GameState, render_buffer* Render, screen_map *Map)
 {
     v3 MapGridColor = V3(0.2,0.2,0.2);
     for (u32 IndexY = 0; IndexY < Map->TileCountY; ++IndexY)
@@ -363,4 +349,50 @@ RenderMap(render_buffer* Render, screen_map *Map)
                        1, MapGridColor);
         }
     }
+    
+    // Crosshairs
+    v3 CrosshairColor = V3(0.5,0.5,0.5);
+    RenderLine(Render,
+               V2(0, GameState->RenderHalfHeight),
+               V2((real32)GameState->RenderWidth, GameState->RenderHalfHeight), 1, CrosshairColor);
+    
+    RenderLine(Render,
+               V2(GameState->RenderHalfWidth, 0),
+               V2(GameState->RenderHalfWidth, (real32)GameState->RenderHeight), 1, CrosshairColor);
+    
+    RenderPlayer(GameState, Render, &GameState->Player, &GameState->Map);
+}
+
+
+
+
+
+//~ NOTE(Eric): Debug Rendering
+inline void
+RenderCollidingTiles(render_buffer *Render, colliding_tiles_result CollidingTiles)
+{
+    if (CollidingTiles.Count > 0)
+    {
+        for(u32 Index = 0; Index < CollidingTiles.Count; ++Index)
+        {
+            v2 Position = CollidingTiles.Tiles[Index].BottomLeft;
+            RenderSquare(Render, Position, TILE_SIZE, V3(.5,.7,.5));
+        }
+    }
+}
+
+inline void
+CastAndRenderPlayerLine(game_state *GameState, render_buffer* Render, u32 Thickness, v3 Color)
+{
+    v2 ScreenP1 = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+    
+    real32 RayLength = 1000;
+    
+    v2 ScreenP2 = V2((RayLength * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
+                         (RayLength * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GamePointToScreenPoint(GameState, GameState->Player.CenterP);
+    
+    RenderLine(Render, ScreenP1, ScreenP2, Thickness, Color);
+    
+    // NOTE(Eric): End of 5/4/2020 5PM stopping point:
+    // TODO(Eric): Calculate reflecting vector and test some collisions!
 }

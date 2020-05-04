@@ -9,7 +9,7 @@ internal void
 InitPlayer(game_state *GameState)
 {
     player Result = {};
-    Result.CenterP = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+    Result.CenterP = V2(0,0);//V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     Result.FacingDirectionAngle = 180;
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
@@ -153,11 +153,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         GameState->RenderWidth = Render->Width;
         GameState->RenderHeight = Render->Height;
-        GameState->RenderHalfWidth = (real32)GameState->RenderWidth / 2.0f;
-        GameState->RenderHalfHeight = (real32)GameState->RenderHeight / 2.0f;
+        GameState->RenderHalfWidth = (real32)GameState->RenderWidth * .5f;
+        GameState->RenderHalfHeight = (real32)GameState->RenderHeight * .5f;
         
         InitMap(GameState);
-        GameState->Player.CenterP = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+        GameState->Player.CenterP = V2(0,0); //V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
         GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                                       RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     }
@@ -165,26 +165,37 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     game_controller_input *Controller = GetController(Input, 0);
     v2 ddP = {};
     // TODO(Eric): Player Movement does NOT feel good, and is based on framerate
+    real32 PlayerAngleMoveAmount = 5;
     if(Controller->MoveUp.EndedDown)
     {
-        GameState->Player.FacingDirectionAngle -= 10;
+        GameState->Player.FacingDirectionAngle -= PlayerAngleMoveAmount;
         ddP.y = 1.0f;
     }
     if(Controller->MoveDown.EndedDown)
     {
-        GameState->Player.FacingDirectionAngle += 10;
+        GameState->Player.FacingDirectionAngle += PlayerAngleMoveAmount;
         ddP.y = -1.0f;
     }
     if(Controller->MoveLeft.EndedDown)
     {
-        GameState->Player.FacingDirectionAngle += 10;
+        GameState->Player.FacingDirectionAngle += PlayerAngleMoveAmount;
         ddP.x = -1.0f;
     }
     if(Controller->MoveRight.EndedDown)
     {
-        GameState->Player.FacingDirectionAngle -= 10;
+        GameState->Player.FacingDirectionAngle -= PlayerAngleMoveAmount;
         ddP.x = 1.0f;
     }
+    
+    if (GameState->Player.FacingDirectionAngle > 360.0f)
+    {
+        GameState->Player.FacingDirectionAngle = PlayerAngleMoveAmount;
+    }
+    else if (GameState->Player.FacingDirectionAngle < 0.0f)
+    {
+        GameState->Player.FacingDirectionAngle = 360.0f - PlayerAngleMoveAmount;
+    }
+    
     
     // Update players position
     GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
@@ -197,20 +208,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // NOTE(Eric): Render
     //
     ClearBackground(Render);
-    RenderMap(Render, &GameState->Map);
-    
-    
-    // Crosshairs
-    v3 CrosshairColor = V3(0.5,0.5,0.5);
-    RenderLine(Render,
-               V2(0, GameState->RenderHalfHeight),
-               V2((real32)GameState->RenderWidth, GameState->RenderHalfHeight), 1, CrosshairColor);
-    
-    RenderLine(Render,
-               V2(GameState->RenderHalfWidth, 0),
-               V2(GameState->RenderHalfWidth, (real32)GameState->RenderHeight), 1, CrosshairColor);
-    
-    RenderPlayer(Render, &GameState->Player, &GameState->Map);
+    RenderMap(GameState, Render, &GameState->Map);
     
     
     
@@ -242,6 +240,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
         }
     }
+    
+    
+    
+    // "Ray" from the player's front
+    CastAndRenderPlayerLine(GameState, Render, 1, V3(.3, .8, .8));
     
     
     

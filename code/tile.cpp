@@ -92,6 +92,33 @@ GetTilesInSquare(screen_map *Map, v2 Pos, u32 SquareSize)
 
 
 inline v2
+GamePointToScreenPoint(game_state *GameState, v2 GamePoint)
+{
+    // GamePoint = Coordinate System in our Game with the center being the origin
+    // ScreenPoint (Result) = Coordinate in pixels on the screen.
+    v2 Result = {};
+    
+    v2 ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+    Result = GamePoint + ScreenCenter;
+    
+    return(Result);
+    
+}
+
+// TODO(Eric): Probably don't want something like this? Everything should be converted to GamePoints
+inline v2
+ScreenPointToGamePoint(game_state *GameState, v2 ScreenPoint)
+{
+    v2 Result = {};
+    
+    v2 ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+    Result = ScreenPoint - ScreenCenter;
+    
+    return(Result);
+    
+}
+
+inline v2
 MetersToGamePoint(game_state *GameState, v2 PointInMeters)
 {
     v2 Result = {};
@@ -102,16 +129,3 @@ MetersToGamePoint(game_state *GameState, v2 PointInMeters)
     return(Result);
 }
 
-inline v2
-GamePointToScreenPoint(game_state *GameState, v2 GamePoint)
-{
-    // GamePoint = Coordinate System in our Game with the center being the origin
-    // ScreenPoint/Result = Coordinate in pixels on the screen.
-    v2 Result = {};
-    
-    v2 ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
-    Result = GamePoint + ScreenCenter;
-    
-    return(Result);
-    
-}
