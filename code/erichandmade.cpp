@@ -133,6 +133,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         InitPlayer(GameState);
         InitAsteroids(GameState);
         
+        poly6 TestPoly = {};
+        TestPoly.CenterP = V2(-18, -8); // In Meters
+        TestPoly.OuterPoints[0] = V2(0, 2); // Relative to the Center.
+        TestPoly.OuterPoints[1] = V2(1, 3);
+        TestPoly.OuterPoints[2] = V2(2, 0); // front
+        TestPoly.OuterPoints[3] = V2(0, -2);
+        TestPoly.OuterPoints[4] = V2(-2, 1);
+        TestPoly.OuterPoints[5] = V2(-1, 1); // Then 5 connects to 0
+        
+        GameState->TestPoly = TestPoly;
+        
+        
         Memory->IsInitialized = true;
     }
     
@@ -178,6 +190,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                                   RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
     
+    // Update TestPoly's position
+    GameState->TestPoly.CenterP.x += Input->dtForFrame;
+    
     //
     // NOTE(Eric): Render
     //
@@ -210,16 +225,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     v2 Origin = GamePointToScreenPoint(GameState, V2(0,0));
     RenderSquare(Render, Origin, 12, V3(1,0.5f,1));
     
-    
-    poly6 TestPoly = {};
-    TestPoly.CenterP = V2(-18, -8); // In Meters
-    TestPoly.OuterPoints[0] = V2(0, 2); // Relative to the Center.
-    TestPoly.OuterPoints[1] = V2(1, 3);
-    TestPoly.OuterPoints[2] = V2(2, 0); // front
-    TestPoly.OuterPoints[3] = V2(0, -2);
-    TestPoly.OuterPoints[4] = V2(-2, 1);
-    TestPoly.OuterPoints[5] = V2(-1, 1); // Then 5 connects to 0
-    
+    // Render TestPoly
+    poly6 TestPoly = GameState->TestPoly;
     for (u32 PolyPIndex = 0; PolyPIndex < ArrayCount(TestPoly.OuterPoints); PolyPIndex++)
     {
         if (PolyPIndex != 5)

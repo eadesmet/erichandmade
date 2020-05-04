@@ -56,6 +56,8 @@ struct game_state
     
     player Player;
     
+    poly6 TestPoly;
+    
     u32 AsteroidCount; // Current Count, not total
     asteroid Asteroids[256];
     
