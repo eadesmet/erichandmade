@@ -49,6 +49,15 @@ operator*=(v2 &B, real32 A)
     return(B);
 }
 
+inline v2 &
+operator/(v2 &B, real32 A)
+{
+    B.x = B.x / A;
+    B.y = B.y / A;
+    
+    return(B);
+}
+
 inline v2
 operator-(v2 A)
 {
@@ -164,6 +173,23 @@ inline real32
 LengthSq(v2 A)
 {
     real32 Result = Inner(A, A);
+    
+    return(Result);
+}
+
+inline real32
+Distance(v2 A)
+{
+    real32 Result = SquareRoot(LengthSq(A));
+    
+    return(Result);
+}
+
+inline v2
+Normalize(v2 A)
+{
+    // NOTE(Eric): A Normalized vector is a vector that has a length of 1 (but same direction)
+    v2 Result = A / Distance(A);
     
     return(Result);
 }

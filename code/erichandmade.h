@@ -3,8 +3,8 @@
 
 #include "platform.h"
 #include <math.h>
-#include "eric_math.h"
 #include "intrinsics.h"
+#include "eric_math.h"
 #include "tile.h"
 
 
