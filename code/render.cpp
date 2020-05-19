@@ -511,82 +511,86 @@ Solve for X = 0 OR X = RenderWidth
 Solve for Y = 0 OR Y = RenderHeight
 whichever calculation works out is our collision point
 
-
-
 */
 #if 1
     line_collision_result Result = {};
     Result.CollisionP = P1;
     Result.NewEndP = P2;
     
-    real32 m = 0;
+    real32 m = 0, b = 0, XAtZeroY = 0, XAtMaxY = 0, YAtMaxX = 0;
     if (P2.x - P1.x == 0)
     {
-        // NOTE(Eric): This creates an interesting bug:
-        // Vertical line going down doesn't correctly 'bounce' back up,
-        // as it does with a Vertical line going up 'bouncing' back down
-        m = 0.0001f; // ??????????????
+        // Slope is undefined
+        // The y-intercept doesn't exist because it's parallel
+        // X is always the same
+        b = P1.y;
+        XAtZeroY = P1.x;
+        XAtMaxY = P1.x;
+        YAtMaxX = P1.y;
     }
     else
     {
         m = Slope(P1, P2);
+        
+        // P1.y = m(P1.x) + b
+        // P1.y - m(P1.x) = b
+        b = P1.y - (m * P1.x); // Point (0,b) = y-intercept
+        
+        // Y = 0, solve for X:
+        // 0 = mx + b
+        // -b = mx
+        // -b/m = x
+        XAtZeroY = -b/m;
+        
+        // Y = RenderHeight, solve for X:
+        // Height = mx + b
+        // Height-b = mx
+        // (Height-b)/m = x
+        XAtMaxY = (GameState->RenderHeight - b) / m;
+        
+        // X = RenderWidth, solve for Y:
+        // Y = m(RenderWidth) + b
+        YAtMaxX = (m * GameState->RenderWidth) + b;
     }
-    // P1.y = m(P1.x) + b
-    // P1.y - m(P1.x) = b
-    real32 b = P1.y - (m * P1.x); // Point (0,b) = y-intercept
     
-    // Y = 0, solve for X:
-    // 0 = mx + b
-    // -b = mx
-    // -b/m = x
-    real32 XAtZeroY = -b/m;
-    
-    // Y = RenderHeight, solve for X:
-    // Height = mx + b
-    // Height-b = mx
-    // (Height-b)/m = x
-    real32 XAtMaxY = (GameState->RenderHeight - b) / m;
-    
-    // X = RenderWidth, solve for Y:
-    // Y = m(RenderWidth) + b
-    real32 YAtMaxX = (m * GameState->RenderWidth) + b;
+    // FIRST AND SECOND ATTEMPT HERE: Left in, I might put them in the blog
     /*
-    // Now that we have m and b of the line, plug in points along the edges for collision point?
-    // Each line has 2 collisions, so we also have to determine which edge P2 is outside of
-    if ((b >= 0 && b <= GameState->RenderHeight) &&
-        P2.x <= 0)
-    {
-        // Colliding with left edge, within bounds at (0,b)
-        Result.CollisionP = V2(0, b);
-        Result.NewEndP = V2(AbsoluteValue(P2.x), P2.y);
-        Result.IsColliding = true;
-    }
-    else if ((XAtZeroY >= 0 && XAtZeroY <= GameState->RenderWidth)
-             && P2.y <= 0)
-    {
-        // Colliding with bottom edge, within bounds at (XAtZeroY,0)
-        Result.CollisionP = V2(XAtZeroY, 0);
-        Result.NewEndP = V2(P2.x, AbsoluteValue(P2.y));
-        Result.IsColliding = true;
-    }
-    else if ((XAtMaxY >= 0 && XAtMaxY <= GameState->RenderWidth)
-             && P2.y >= GameState->RenderHeight)
-    {
-        // Colliding with top edge, within bounds at (XAtMaxY,RenderHeight)
-        Result.CollisionP = V2(XAtMaxY, (real32)GameState->RenderHeight);
-        Result.NewEndP = V2(P2.x, P2.y - 2 * (P2.y - GameState->RenderHeight));
-        Result.IsColliding = true;
-    }
-    else if ((YAtMaxX >= 0 && YAtMaxX <= GameState->RenderHeight)
-             && P2.x >= GameState->RenderWidth)
-    {
-        // Colliding with right edge, within bounds at (RenderWidth,YAtMaxX)
-        Result.CollisionP = V2((real32)GameState->RenderWidth, YAtMaxX);
-        Result.NewEndP = V2(P2.x - 2 * (GameState->RenderWidth - P2.x), P2.y);
-        Result.IsColliding = true;
-    }
-    */
-    
+                // Now that we have m and b of the line, plug in points along the edges for collision point?
+                // Each line has 2 collisions, so we also have to determine which edge P2 is outside of
+                if ((b >= 0 && b <= GameState->RenderHeight) &&
+                    P2.x <= 0)
+                {
+                    // Colliding with left edge, within bounds at (0,b)
+                    Result.CollisionP = V2(0, b);
+                    Result.NewEndP = V2(AbsoluteValue(P2.x), P2.y);
+                    Result.IsColliding = true;
+                }
+                else if ((XAtZeroY >= 0 && XAtZeroY <= GameState->RenderWidth)
+                         && P2.y <= 0)
+                {
+                    // Colliding with bottom edge, within bounds at (XAtZeroY,0)
+                    Result.CollisionP = V2(XAtZeroY, 0);
+                    Result.NewEndP = V2(P2.x, AbsoluteValue(P2.y));
+                    Result.IsColliding = true;
+                }
+                else if ((XAtMaxY >= 0 && XAtMaxY <= GameState->RenderWidth)
+                         && P2.y >= GameState->RenderHeight)
+                {
+                    // Colliding with top edge, within bounds at (XAtMaxY,RenderHeight)
+                    Result.CollisionP = V2(XAtMaxY, (real32)GameState->RenderHeight);
+                    Result.NewEndP = V2(P2.x, P2.y - 2 * (P2.y - GameState->RenderHeight));
+                    Result.IsColliding = true;
+                }
+                else if ((YAtMaxX >= 0 && YAtMaxX <= GameState->RenderHeight)
+                         && P2.x >= GameState->RenderWidth)
+                {
+                    // Colliding with right edge, within bounds at (RenderWidth,YAtMaxX)
+                    Result.CollisionP = V2((real32)GameState->RenderWidth, YAtMaxX);
+                    Result.NewEndP = V2(P2.x - 2 * (GameState->RenderWidth - P2.x), P2.y);
+                    Result.IsColliding = true;
+                }
+                */
+    /*
     // END OF 5/18/20 STOPPED HERE:
     // I think we are almost there..
     // Coming back to this later with a fresh mind will help.
@@ -599,9 +603,7 @@ whichever calculation works out is our collision point
     // This isn't quite right either 
     /*
     v2 TopRight = V2(P1.x+1.0f, P1.y+1.0f);
-    real32 DiagonalSlope = Slope(P1, TopRight);
-    */
-    
+    real32 DiagonalSlope = Slope(P1, TopRight); /
     
     bool32 Steep = ((m > DiagonalSlope) || (m < -DiagonalSlope));
     
@@ -610,32 +612,51 @@ whichever calculation works out is our collision point
     
     bool32 Right = P2.x >= GameState->RenderWidth && !Steep;
     bool32 Left = P2.x <= 0 && !Steep;
+    */
+    
+    // My problem is when it's both points are colliding
+    // I need to make sure it still picks up the second point
+    
+    bool32 Above = XAtMaxY >= 0 && XAtMaxY <= GameState->RenderWidth && P1.y < P2.y && P2.y >= GameState->RenderHeight;
+    bool32 Below = XAtZeroY >= 0 && XAtZeroY <= GameState->RenderWidth && P1.y > P2.y && P2.y <= 0;
+    
+    bool32 Right = YAtMaxX >= 0 && YAtMaxX <= GameState->RenderHeight && P1.x < P2.x && P2.x >= GameState->RenderWidth;
+    bool32 Left = b >= 0 && b <= GameState->RenderHeight && P1.x > P2.x && P2.x <= 0;
+    
     
     if (Above)
     {
         // Colliding with Top
-        Result.CollisionP = V2(XAtMaxY, (real32)GameState->RenderHeight);
+        v2 NewCollisionP = V2(XAtMaxY, (real32)GameState->RenderHeight);
+        
+        Result.CollisionP = NewCollisionP;
         Result.NewEndP = V2(P2.x, P2.y - 2 * (P2.y - GameState->RenderHeight));
         Result.IsColliding = true;
     }
     else if (Below)
     {
         // Colliding with Bottom
-        Result.CollisionP = V2(XAtZeroY, 0);
+        v2 NewCollisionP = V2(XAtZeroY, 0);
+        
+        Result.CollisionP = NewCollisionP;
         Result.NewEndP = V2(P2.x, AbsoluteValue(P2.y));
         Result.IsColliding = true;
     }
     else if (Left)
     {
         // Colliding with Left
-        Result.CollisionP = V2(0, b);
+        v2 NewCollisionP = V2(0, b);
+        
+        Result.CollisionP = NewCollisionP;
         Result.NewEndP = V2(AbsoluteValue(P2.x), P2.y);
         Result.IsColliding = true;
     }
     else if (Right)
     {
         // Colliding with Right
-        Result.CollisionP = V2((real32)GameState->RenderWidth, YAtMaxX);
+        v2 NewCollisionP = V2((real32)GameState->RenderWidth, YAtMaxX);
+        
+        Result.CollisionP = NewCollisionP;
         Result.NewEndP = V2(P2.x - 2 * (P2.x - GameState->RenderWidth), P2.y);
         Result.IsColliding = true;
     }

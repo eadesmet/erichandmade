@@ -10,7 +10,7 @@ InitPlayer(game_state *GameState)
 {
     player Result = {};
     Result.CenterP = V2(0,0);//V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
-    Result.FacingDirectionAngle = 155;
+    Result.FacingDirectionAngle = 270;
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
     
@@ -165,7 +165,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     game_controller_input *Controller = GetController(Input, 0);
     v2 ddP = {};
     // TODO(Eric): Player Movement does NOT feel good, and is based on framerate
-    real32 PlayerAngleMoveAmount = 5;
+    real32 PlayerAngleMoveAmount = 1;
     if(Controller->MoveUp.EndedDown)
     {
         GameState->Player.FacingDirectionAngle -= PlayerAngleMoveAmount;
