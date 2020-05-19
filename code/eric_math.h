@@ -202,6 +202,15 @@ RadiansToDegrees(real32 R)
     return(Result);
 }
 
+inline real32
+Slope(v2 P1, v2 P2)
+{
+    // TODO(EriC): Check for divide by 0!
+    real32 Result = (P2.y - P1.y) / (P2.x - P1.x);
+    
+    return(Result);
+}
+
 //~ V3
 
 // NOTE(Eric): V4 For colors instead? Do we want an Alpha value?

@@ -10,7 +10,7 @@ InitPlayer(game_state *GameState)
 {
     player Result = {};
     Result.CenterP = V2(0,0);//V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
-    Result.FacingDirectionAngle = 75;
+    Result.FacingDirectionAngle = 155;
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
     
