@@ -3,6 +3,7 @@
 #include "random.h"
 #include "tile.cpp"
 #include "render.cpp"
+#include "collision.cpp"
 
 //~ NOTE(Eric): Init functions
 internal void
