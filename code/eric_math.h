@@ -169,6 +169,7 @@ Inner(v2 A, v2 B)
     return(Result);
 }
 
+// TODO(Eric): How do length and distance only take 1 point?!! what are these doing???
 inline real32
 LengthSq(v2 A)
 {

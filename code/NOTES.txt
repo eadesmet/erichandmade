@@ -3,6 +3,14 @@
     Handmade HEro Day 65, Question at 1:11:45
         Explaination of how his entity system works (beginsim, endsim)
         useful for what we might do later, or for my next game
+
+
+
+    Collision with box is working (colliding two line segments and calculating which is closest)
+
+    Collision with polygon will be the same thing! just loop through the lines/points!
+    Then I think the calculated angle for the new endP will be both lines normalized then added?
+    
 }
 
 7/13:

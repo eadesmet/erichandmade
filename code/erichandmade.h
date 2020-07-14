@@ -6,6 +6,7 @@
 #include "intrinsics.h"
 #include "eric_math.h"
 #include "tile.h"
+#include "collision.h"
 
 
 #define PLAYER_HALFWIDTH 10
@@ -16,7 +17,7 @@ struct player
 {
     v2 CenterP; // Center of the Triangle
     v2 FrontP;  // Point of the front of the ship (where bullets will come out)
-    
+
     real32 FacingDirectionAngle;
 };
 
@@ -31,20 +32,20 @@ struct asteroid
     v2 CenterP; // 'Center' of the asteroid
     v2 StartP;  // Start Position of movement
     v2 EndP;    // End Position of movement
-    
+
     real32 Radius;
     real32 Speed;
-    
+
     asteroid_state State;
-    
+
     v3 Color;
 };
 
-// TODO(Eric): Test something like this out for asteroids
-struct poly6
+struct poly
 {
     v2 CenterP;
-    v2 OuterPoints[6];
+    u32 PointCount;
+    v2 Points[16];
 };
 
 struct bounding_box
@@ -59,15 +60,16 @@ struct game_state
     s32 RenderHeight;
     real32 RenderHalfWidth;
     real32 RenderHalfHeight;
-    
+    v2 ScreenCenter;
+
     player Player;
-    
-    poly6 TestPoly;
-    bounding_box TestCollisionBox;
-    
+
+    poly TestPoly;
+    //bounding_box TestCollisionBox;
+
     u32 AsteroidCount; // Current Count, not total
     asteroid Asteroids[256];
-    
+
     // NOTE(Eric): Must be last
     screen_map Map;
 };
@@ -106,14 +108,14 @@ inline real32
 Mix(real32 A, real32 B, real32 Amount)
 {
     real32 Result = (1-Amount) * A + Amount * B;
-    
+
     return(Result);
 }
 inline real32
 Lerp(real32 A, real32 B, real32 Amount)
 {
     real32 Result = (1-Amount) * A + Amount * B;
-    
+
     return(Result);
 }
 inline v2
@@ -122,7 +124,7 @@ Mix(v2 A, v2 B, real32 Amount)
     v2 Result = {};
     Result.x = (1-Amount) * A.x + Amount * B.x;
     Result.y = (1-Amount) * A.y + Amount * B.y;
-    
+
     return(Result);
 }
 inline v2
@@ -131,7 +133,7 @@ Lerp(v2 A, v2 B, real32 Amount)
     v2 Result = {};
     Result.x = (1-Amount) * A.x + Amount * B.x;
     Result.y = (1-Amount) * A.y + Amount * B.y;
-    
+
     return(Result);
 }
 
