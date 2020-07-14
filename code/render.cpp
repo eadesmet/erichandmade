@@ -141,20 +141,50 @@ PlotLineHigh(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 inline void
 RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
-    // y = mx + b
-    // m = slope of the line
-    // m = y2 - y1 / x2 - x1;
-    // b = y intercept : where on the y axis the line intercepts
     
-    // NOTE(Eric): The RenderSquare is checking bounds
-    // We don't have to check it every step of the way
-#if 0
-    Assert(P1.x <= Render->Width);
-    Assert(P2.x <= Render->Width);
-    Assert(P1.y <= Render->Height);
-    Assert(P2.y <= Render->Height);
-#endif
+#if 1
+    // NOTE(Eric): This removes the need for PlotLineLow and PlotLineHigh!
+    // Testing out streamlined version of bresenham's line algorithm
+    int DeltaX = (int)AbsoluteValue(P2.x - P1.x);
+    int IncrementX = P1.x < P2.x ? 1 : -1;
+    int DeltaY = (int)-(AbsoluteValue(P2.y - P1.y));
+    int IncrementY = P1.y < P2.y ? 1 : -1;
+    int ErrorAmount = DeltaX + DeltaY;
+    int E2 = 0;
     
+    int x0 = (int)P1.x;
+    int x1 = (int)P2.x;
+    int y0 = (int)P1.y;
+    int y1 = (int)P2.y;
+    
+    while(true)
+    {
+        RenderSquare(Render, V2((real32)x0,(real32)y0), Thickness, Color);
+        
+        // Checking if it's within 1, so possibly the last pixel doesn't get rendered
+        // When this was a straight up equality check, it _sometimes_ caused an infinite loop
+        if (x0+1 >= x1 && x0-1 <= x1 &&
+            y0+1 >= y1 && y0-1 <= y1)
+        {
+            break;
+        }
+        
+        E2 = 2 * ErrorAmount;
+        if (E2 >= DeltaY)
+        {
+            ErrorAmount += DeltaY;
+            x0 += IncrementX;
+        }
+        if (E2 <= DeltaX)
+        {
+            ErrorAmount += DeltaX;
+            y0 += IncrementY;
+        }
+    }
+    
+    
+    
+#else
     // The change in Y is LESS than the change in X - Meaning the line is closer to X than Y axis
     // 'Low' is left and right near x-axis, 'High' is up and down near y-axis
     if (AbsoluteValue(P2.y - P1.y) < AbsoluteValue(P2.x - P1.x))
@@ -179,7 +209,7 @@ RenderLine(render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
             PlotLineHigh(Render, P1, P2, Thickness, Color);
         }
     }
-    
+#endif
 }
 
 //~ NOTE(Eric): Circle
@@ -383,4 +413,50 @@ RenderCollidingTiles(render_buffer *Render, colliding_tiles_result CollidingTile
     }
 }
 
+inline void
+RenderWireBoundingBox(render_buffer *Render, v2 Min, v2 Max)
+{
+    v2 TopLeft = V2(Min.x, Max.y);
+    v2 BottomLeft = Min;
+    v2 TopRight = Max;
+    v2 BottomRight = V2(Max.x, Min.y);
+    
+    RenderLine(Render, BottomLeft, BottomRight, 1, V3(1,1,1));
+    RenderLine(Render, BottomLeft, TopLeft, 1, V3(1,1,1));
+    RenderLine(Render, TopRight, TopLeft, 1, V3(1,1,1));
+    RenderLine(Render, TopRight, BottomRight, 1, V3(1,1,1));
+    
+}
+
+
+// TODO(Eric): MOVE THESE FUNCTION SOMEWHERE ELSE. Also, is there a better way?
+inline v2
+FindMinPolyP(poly6 Poly)
+{
+    real32 MinX = Poly.OuterPoints[0].x, MinY = Poly.OuterPoints[0].y;
+    for (u32 PolyPIndex = 0; PolyPIndex < ArrayCount(Poly.OuterPoints); PolyPIndex++)
+    {
+        if (Poly.OuterPoints[PolyPIndex].x < MinX)
+            MinX = Poly.OuterPoints[PolyPIndex].x;
+        if (Poly.OuterPoints[PolyPIndex].y < MinY)
+            MinY = Poly.OuterPoints[PolyPIndex].y;
+    }
+    
+    return (V2(MinX, MinY));
+}
+
+inline v2
+FindMaxPolyP(poly6 Poly)
+{
+    real32 MaxX = Poly.OuterPoints[0].x, MaxY = Poly.OuterPoints[0].y;
+    for (u32 PolyPIndex = 0; PolyPIndex < ArrayCount(Poly.OuterPoints); PolyPIndex++)
+    {
+        if (Poly.OuterPoints[PolyPIndex].x > MaxX)
+            MaxX = Poly.OuterPoints[PolyPIndex].x;
+        if (Poly.OuterPoints[PolyPIndex].y > MaxY)
+            MaxY = Poly.OuterPoints[PolyPIndex].y;
+    }
+    
+    return (V2(MaxX, MaxY));
+}
 

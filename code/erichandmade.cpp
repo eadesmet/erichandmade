@@ -11,7 +11,7 @@ InitPlayer(game_state *GameState)
 {
     player Result = {};
     Result.CenterP = V2(0,0);//V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
-    Result.FacingDirectionAngle = 270;
+    Result.FacingDirectionAngle = 200;
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
     
@@ -106,7 +106,7 @@ CheckCollisionAsteroids(asteroid Ast1, asteroid Ast2)
     real32 DeltaX = Ast2.CenterP.x - Ast1.CenterP.x;
     real32 DeltaY = Ast2.CenterP.y - Ast1.CenterP.y;
     
-    real32 Distance = SquareRoot(DeltaX*DeltaX + DeltaY*DeltaY);
+    real32 Distance = SquareRoot(DeltaX*DeltaX + DeltaY*DeltaY); // NOTE(Eric): This is Inner (v2)
     
     if (Distance <= ((Ast1.Radius) + (Ast2.Radius)))
         Result = true;
@@ -212,7 +212,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     RenderMap(GameState, Render, &GameState->Map);
     
     
-    
+/*    
     v2 TestNewCoord = V2(-20,40);
     v2 ScreenNewCoord = GamePointToScreenPoint(GameState, TestNewCoord);
     RenderSquare(Render, ScreenNewCoord, 12, V3(0,0.5f,1));
@@ -223,7 +223,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     
     v2 Origin = GamePointToScreenPoint(GameState, V2(0,0));
     RenderSquare(Render, Origin, 12, V3(1,0.5f,1));
-    
+*/  
+
     // Render TestPoly
     poly6 TestPoly = GameState->TestPoly;
     for (u32 PolyPIndex = 0; PolyPIndex < ArrayCount(TestPoly.OuterPoints); PolyPIndex++)
@@ -240,16 +241,28 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             v2 P2 = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP + TestPoly.OuterPoints[0]));
             RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
         }
+        //GameState->TestPoly.OuterPoints[PolyPIndex].x += Input->dtForFrame;
     }
     
+    // Render TestPoly's center:
+    RenderSquare(Render, GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP)), 3, V3(0,1,1));
+    
+    // TODO(Eric): Some wicked nesting we should sort out
+    
+    v2 TestPolyMin = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP+FindMinPolyP(TestPoly)));
+    v2 TestPolyMax = GamePointToScreenPoint(GameState, MetersToGamePoint(GameState, TestPoly.CenterP+FindMaxPolyP(TestPoly)));
+    RenderWireBoundingBox(Render, TestPolyMin, TestPolyMax);
+    
+    bounding_box PolyBox = {};
+    PolyBox.Min = TestPolyMin;
+    PolyBox.Max = TestPolyMax;
+
+    GameState->TestCollisionBox = PolyBox;
     
     
     // "Ray" from the player's front
     CastAndRenderPlayerLine(GameState, Render, 1, V3(.3, .8, .8));
-    
-    
-    
-    
+
 }
 
 

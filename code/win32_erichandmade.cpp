@@ -207,7 +207,7 @@ Win32LoadGameCode(char *SourceDLLName, char *TempDLLName)
     
     Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
     
-    Sleep(100);
+    Sleep(10);
     CopyFile(SourceDLLName, TempDLLName, FALSE);
     
     Result.GameCodeDLL = LoadLibraryA(TempDLLName);
@@ -786,6 +786,9 @@ WinMain(HINSTANCE h_instance, HINSTANCE prev_instance,LPSTR Command, int ShowCom
                                                                SecondsElapsedForFrame));
                             if(SleepMS > 0)
                             {
+                                //char DebugMessage[64];
+                                //_snprintf_s(DebugMessage, sizeof(DebugMessage), "Sleep for %d\n", SleepMS);
+                                //OutputDebugStringA(DebugMessage);
                                 Sleep(SleepMS);
                             }
                         }

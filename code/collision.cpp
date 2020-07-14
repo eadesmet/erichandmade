@@ -1,108 +1,3 @@
-#define LINE_HIT_TOLERANCE 0.9f
-
-inline v2
-CheckCollisionLineLow(game_state *GameState, v2 P1, v2 P2)
-{
-    v2 CollisionPoint = {};
-    real32 DeltaX = P2.x - P1.x;
-    real32 DeltaY = P2.y - P1.y;
-    real32 yi = 1;
-    
-    if (DeltaY < 0)
-    {
-        yi = -1;
-        DeltaY = -DeltaY;
-    }
-    
-    real32 Delta = (2 * DeltaY) - DeltaX;
-    real32 y = P1.y;
-    
-    for (real32 x = P1.x; x < P2.x; ++x)
-    {
-        // TODO(Eric): Check point (x,y) for collision, set collision point
-        // TODO(Eric): For now, just make it collide with the walls and we know that from gamestate
-        if (((x <= GameState->RenderWidth+LINE_HIT_TOLERANCE &&
-              x >= GameState->RenderWidth-LINE_HIT_TOLERANCE) ||
-             (y <= GameState->RenderHeight+LINE_HIT_TOLERANCE &&
-              y >= GameState->RenderHeight-LINE_HIT_TOLERANCE)
-             ||
-             (x <= 0+LINE_HIT_TOLERANCE && x >= 0-LINE_HIT_TOLERANCE) ||
-             (y <= 0+LINE_HIT_TOLERANCE && y >= 0-LINE_HIT_TOLERANCE))
-            &&
-            (x >= -LINE_HIT_TOLERANCE && y >= -LINE_HIT_TOLERANCE)
-            &&
-            (x != P1.x))
-        {
-            x = Clamp((real32)0, x, (real32)GameState->RenderWidth);
-            y = Clamp((real32)0, y, (real32)GameState->RenderHeight);
-            CollisionPoint = V2(x,y);
-            break;
-        }
-        
-        if (Delta > 0)
-        {
-            y += yi;
-            Delta = Delta - (2*DeltaX);
-        }
-        Delta = Delta + (2*DeltaY);
-    }
-    return(CollisionPoint);
-}
-inline v2
-CheckCollisionLineHigh(game_state *GameState, v2 P1, v2 P2)
-{
-    v2 CollisionPoint = {};
-    real32 DeltaX = P2.x - P1.x;
-    real32 DeltaY = P2.y - P1.y;
-    real32 xi = 1;
-    
-    if (DeltaX < 0)
-    {
-        xi = -1;
-        DeltaX = -DeltaX;
-    }
-    
-    real32 Delta = (2*DeltaX) - DeltaY;
-    real32 x = P1.x;
-    
-    for (real32 y = P1.y; y < P2.y; ++y)
-    {
-        // TODO(Eric): Check point (x,y) for collision, set collision point
-        // TODO(Eric): For now, just make it collide with the walls and we know that from gamestate
-        if (
-            // X is Right on the MAX X Edge (Right)
-            ((x <= GameState->RenderWidth+LINE_HIT_TOLERANCE &&
-              x >= GameState->RenderWidth-LINE_HIT_TOLERANCE) 
-             ||
-             // Y is Right on the MAX Y Edge (Left)
-             (y <= GameState->RenderHeight+LINE_HIT_TOLERANCE &&
-              y >= GameState->RenderHeight-LINE_HIT_TOLERANCE)
-             ||
-             // X is on the Left Edge 
-             (x <= 0+LINE_HIT_TOLERANCE && x >= 0-LINE_HIT_TOLERANCE) 
-             ||
-             // Y is on the Bottom Edge
-             (y <= 0+LINE_HIT_TOLERANCE && y >= 0-LINE_HIT_TOLERANCE))
-            
-            &&
-            (y != P1.y))
-        {
-            x = Clamp((real32)0, x, (real32)GameState->RenderWidth);
-            y = Clamp((real32)0, y, (real32)GameState->RenderHeight);
-            CollisionPoint = V2(x,y);
-            break;
-        }
-        
-        if (Delta > 0)
-        {
-            x+= xi;
-            Delta = Delta - (2*DeltaY);
-        }
-        Delta = Delta + (2*DeltaX);
-    }
-    return(CollisionPoint);
-}
-
 struct line_collision_result
 {
     bool32 IsColliding;
@@ -111,27 +6,169 @@ struct line_collision_result
 };
 
 inline line_collision_result
+CheckCollisionLines(v2 A, v2 B, v2 C, v2 D)
+{
+    // Checks collision between two lines (AB and CD)
+    line_collision_result Result = {};
+
+    real32 Denom = (((D.y - C.y) * (B.x - A.x)) - ((D.x - C.x) * (B.y - A.y)));
+    real32 NumeratorA = (((D.x - C.x) * (A.y - C.y)) - ((D.y - C.y) * (A.x - C.x)));
+    real32 NumeratorB = (((B.x - A.x) * (A.y - C.y)) - ((B.y - A.y) * (A.x - C.x)));
+
+    if (Denom == 0.0f)
+    {
+        // Lines are parallel and don't collide
+        Result.IsColliding = false;
+        return(Result);
+    }
+
+    real32 Ua = NumeratorA / Denom;
+    real32 Ub = NumeratorB / Denom;
+
+    if (Ua == Ub)
+    {
+        // Lines are conincident (they are exactly the same line)
+        Result.IsColliding = false;
+        return(Result);
+    }
+
+    // Collision point
+    real32 CollisionX = A.x + (Ua * (B.x - A.x));
+    real32 CollisionY = A.y + (Ua * (B.y - A.y));
+
+    Result.IsColliding = true;
+    Result.CollisionP = V2(CollisionX, CollisionY);
+
+    return(Result);
+
+#if 0
+    v2 CmP = C-A;
+    v2 r = B-A;
+    v2 s = D-C;
+
+    real32 CmPxr = (CmP.x * r.y) - (CmP.y * r.x);
+    real32 CmPxs = (CmP.x * s.y) - (CmP.y * s.x);
+    real32 rxs = r.x * s.y - r.y * s.x;
+
+    if (CmPxr == 0.0f)
+    {
+        // Lines are collinear
+        Result.IsColliding = ((C.x - A.x < 0.0f) != (C.x - B.x < 0.0f)) || ((C.y - A.y < 0.0f) != (C.y - B.y < 0.0f));
+    }
+
+    if (rxs == 0.0f)
+    {
+        Result.IsColliding = false; // Lines are parallel
+    }
+
+    real32 rxsr = 1.0f / rxs;
+    real32 t = CmPxs * rxsr;
+    real32 u = CmPxr * rxsr;
+
+    v2 CollidingP = A + t*r;
+    Result.IsColliding = (t >= 0.0f) && (t <= 1.0f) && (u >= 0.0f) && (u <= 1.0f)
+                && CollidingP != A; // To avoid collision with first point being counted
+
+    Result.CollisionP = CollidingP;
+    return (Result);
+#endif
+
+    
+}
+
+inline line_collision_result
+CheckCollisionBoundingBox(v2 A, v2 B, bounding_box Box)
+{
+    line_collision_result Result = {};
+
+    v2 Min = Box.Min;
+    v2 Max = Box.Max;
+    v2 TopLeft = V2(Min.x, Max.y);
+    v2 BottomLeft = Min;
+    v2 TopRight = Max;
+    v2 BottomRight = V2(Max.x, Min.y);
+
+    line_collision_result LeftBoxResult = CheckCollisionLines(A, B, BottomLeft, TopLeft);
+    line_collision_result RightBoxResult = CheckCollisionLines(A, B, BottomRight, TopRight);
+    line_collision_result TopBoxResult = CheckCollisionLines(A, B, TopLeft, TopRight);
+    line_collision_result BottomBoxResult = CheckCollisionLines(A, B, BottomLeft, BottomRight);
+
+    // TODO(Eric): Somehow check which collision is the closest to A (without a ton of logic)
+    // Assumptions we can make:
+    //    a line intersecting a box will always hit two points
+    //      (unless the line is short and would have ended inside the box....)
+    //    The direction of the line will determine which two sides are possible?
+    //       down-right: left+bottom or top+right - so it would be left or top, and it can't be both of those.
+    //                     or left+right..
+
+    // (7/14): Really, it's whichever coordinate is closer to the source point
+    // if left.X is closer to A.x than right.X, it's hitting left side first (horizontally)
+    // Then check if the y is loser to A.x
+    // Then it's a matter of checking which is closer, horizontally or vertically    
+    // If it's closer to left.x, then if the collision point is greater, than its the top or bottom, NOT left
+
+
+    // TODO(ERic): End of 7/9: stopped here. See TODO above
+    v2 Norm = Normalize(B-A);
+    // (-,-) : down left
+    // (+,+) : up right
+    if (Norm.x <= 0 && Norm.y <= 0)
+    {
+        // down left - colliding with top or right
+        if (TopBoxResult.IsColliding)
+        {
+            // Colliding with top edge of box - line is going down
+            Result.CollisionP = TopBoxResult.CollisionP;
+            Result.NewEndP = V2(B.x, AbsoluteValue(B.y));
+            Result.IsColliding = true;
+        }
+
+    }
+
+    
+
+
+    if (LeftBoxResult.IsColliding)
+    {
+        // Colliding with left edge of box - line is going right
+        Result.CollisionP = LeftBoxResult.CollisionP;
+        Result.NewEndP = V2(B.x - 2 * (B.x - Result.CollisionP.x), B.y);
+        Result.IsColliding = true;
+    }
+    else if (RightBoxResult.IsColliding)
+    {
+        // Colliding with right edge of box - line is going left
+        Result.CollisionP = RightBoxResult.CollisionP;
+        Result.NewEndP = V2(AbsoluteValue(B.x), B.y);
+        Result.IsColliding = true;
+    }
+    else if (TopBoxResult.IsColliding)
+    {
+        // Colliding with top edge of box - line is going down
+        Result.CollisionP = TopBoxResult.CollisionP;
+        Result.NewEndP = V2(B.x, AbsoluteValue(B.y));
+        Result.IsColliding = true;
+    }
+    else if (BottomBoxResult.IsColliding)
+    {
+        // Colliding with bottom edge of box - line is going up
+        Result.CollisionP = BottomBoxResult.CollisionP;
+        Result.NewEndP = V2(B.x, B.y - 2 * (B.y - Result.CollisionP.y));
+        Result.IsColliding = true;
+    }
+
+    return(Result);
+}
+
+inline line_collision_result
 CheckCollisionLine(game_state *GameState, v2 P1, v2 P2)
 {
-    // y = mx + b
-    // m = slope of the line
-    // m = y2 - y1 / x2 - x1;
-    // b = y intercept : where on the y axis the line intercepts
-    /*
-So we have the two points, and the render size. I think we can calculate the collision point
-instead of walking the line point by point.
-
-Solve for X = 0 OR X = RenderWidth
-Solve for Y = 0 OR Y = RenderHeight
-whichever calculation works out is our collision point
-
-*/
-#if 1
     line_collision_result Result = {};
     Result.CollisionP = P1;
     Result.NewEndP = P2;
     
     real32 m = 0, b = 0, XAtZeroY = 0, XAtMaxY = 0, YAtMaxX = 0;
+    real32 ChangeInX = 0, ChangeInY = 0;
     if (P2.x - P1.x == 0)
     {
         // Slope is undefined
@@ -141,10 +178,47 @@ whichever calculation works out is our collision point
         XAtZeroY = P1.x;
         XAtMaxY = P1.x;
         YAtMaxX = P1.y;
+
+        ChangeInX = 0;
+        ChangeInY = P2.y - P1.y; // This is probably incorrect.?
     }
     else
     {
         m = Slope(P1, P2);
+        
+        ChangeInX = P2.x - P1.x;
+        ChangeInY = P2.y - P1.y;
+        // ChangeInY * x - ChangeInX * y + ChangeInX * b = 0
+        // X intercept
+        real32 C = ChangeInX * m;
+        // Solve for X:
+        // 0 = ChangeInY * x - C
+        // C = ChangeInY * X
+        // C / ChangeInY = X
+        real32 XIntercept = C / ChangeInY;
+        
+        // Solve for Y:
+        // 0 = -(ChangeInX * Y) + C
+        // -C = -(ChangeInX * Y)
+        // C = ChangeInX * Y
+        // C / ChangeInX = Y
+        real32 YIntercept = C / ChangeInX;
+        
+        // Solve for Y when Max X:
+        // 0 = (ChangeInY * MaxX) -  (ChangeInX * Y) + C
+        // -(ChangeInY * MaxX) - C = -(ChangeInX * Y)
+        // -(ChangeInY * MaxX) - C / -ChangeInX = Y
+        real32 MaxX_Y = (-(ChangeInY * GameState->RenderWidth) - C) / -ChangeInX;
+        
+        // Solve for X when Max Y:
+        // 0 = (ChangeInY * X) -  (ChangeInX * MaxY) + C
+        // ChangeInX * MaxY - C = ChangeInY * X
+        // ChangeInX * MaxY - C / ChangeInY = X
+        real32 MaxY_X = ((ChangeInX * GameState->RenderHeight - C) / ChangeInY);
+        
+        
+        
+        //--------------
         
         // P1.y = m(P1.x) + b
         // P1.y - m(P1.x) = b
@@ -165,71 +239,9 @@ whichever calculation works out is our collision point
         // X = RenderWidth, solve for Y:
         // Y = m(RenderWidth) + b
         YAtMaxX = (m * GameState->RenderWidth) + b;
+        
+        bool test = false;
     }
-    
-    // FIRST AND SECOND ATTEMPT HERE: Left in, I might put them in the blog
-    /*
-                // Now that we have m and b of the line, plug in points along the edges for collision point?
-                // Each line has 2 collisions, so we also have to determine which edge P2 is outside of
-                if ((b >= 0 && b <= GameState->RenderHeight) &&
-                    P2.x <= 0)
-                {
-                    // Colliding with left edge, within bounds at (0,b)
-                    Result.CollisionP = V2(0, b);
-                    Result.NewEndP = V2(AbsoluteValue(P2.x), P2.y);
-                    Result.IsColliding = true;
-                }
-                else if ((XAtZeroY >= 0 && XAtZeroY <= GameState->RenderWidth)
-                         && P2.y <= 0)
-                {
-                    // Colliding with bottom edge, within bounds at (XAtZeroY,0)
-                    Result.CollisionP = V2(XAtZeroY, 0);
-                    Result.NewEndP = V2(P2.x, AbsoluteValue(P2.y));
-                    Result.IsColliding = true;
-                }
-                else if ((XAtMaxY >= 0 && XAtMaxY <= GameState->RenderWidth)
-                         && P2.y >= GameState->RenderHeight)
-                {
-                    // Colliding with top edge, within bounds at (XAtMaxY,RenderHeight)
-                    Result.CollisionP = V2(XAtMaxY, (real32)GameState->RenderHeight);
-                    Result.NewEndP = V2(P2.x, P2.y - 2 * (P2.y - GameState->RenderHeight));
-                    Result.IsColliding = true;
-                }
-                else if ((YAtMaxX >= 0 && YAtMaxX <= GameState->RenderHeight)
-                         && P2.x >= GameState->RenderWidth)
-                {
-                    // Colliding with right edge, within bounds at (RenderWidth,YAtMaxX)
-                    Result.CollisionP = V2((real32)GameState->RenderWidth, YAtMaxX);
-                    Result.NewEndP = V2(P2.x - 2 * (GameState->RenderWidth - P2.x), P2.y);
-                    Result.IsColliding = true;
-                }
-                */
-    /*
-    // END OF 5/18/20 STOPPED HERE:
-    // I think we are almost there..
-    // Coming back to this later with a fresh mind will help.
-    
-    // This only works if the first point is the Center!
-    v2 Center = V2((real32)GameState->RenderWidth/2, (real32)GameState->RenderHeight/2);
-    v2 TopRight = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
-    real32 DiagonalSlope = Slope(Center, TopRight);
-    
-    // This isn't quite right either 
-    /*
-    v2 TopRight = V2(P1.x+1.0f, P1.y+1.0f);
-    real32 DiagonalSlope = Slope(P1, TopRight); /
-    
-    bool32 Steep = ((m > DiagonalSlope) || (m < -DiagonalSlope));
-    
-    bool32 Above = P2.y >= GameState->RenderHeight && Steep;
-    bool32 Below = P2.y <= 0 && Steep;
-    
-    bool32 Right = P2.x >= GameState->RenderWidth && !Steep;
-    bool32 Left = P2.x <= 0 && !Steep;
-    */
-    
-    // My problem is when it's both points are colliding
-    // I need to make sure it still picks up the second point
     
     bool32 Above = XAtMaxY >= 0 && XAtMaxY <= GameState->RenderWidth && P1.y < P2.y && P2.y >= GameState->RenderHeight;
     bool32 Below = XAtZeroY >= 0 && XAtZeroY <= GameState->RenderWidth && P1.y > P2.y && P2.y <= 0;
@@ -274,47 +286,28 @@ whichever calculation works out is our collision point
         Result.NewEndP = V2(P2.x - 2 * (P2.x - GameState->RenderWidth), P2.y);
         Result.IsColliding = true;
     }
+
+    // Checking collision with bounding_box in GameState
+    bounding_box TestBox = GameState->TestCollisionBox;
+
+    line_collision_result BoxResult = CheckCollisionBoundingBox(P1, P2, TestBox);
+    if (BoxResult.IsColliding)
+    {
+        Result = BoxResult;
+    }
+
+    
+
+    
     
     return(Result);
-    
-#else
-    
-    
-    // NOTE(Eric): This function is only to differentiate between Low vs High functions to make it easier on us
-    v2 Result = {};
-    if (AbsoluteValue(P2.y - P1.y) < AbsoluteValue(P2.x - P1.x))
-    {
-        if (P1.x > P2.x)
-        {
-            Result = CheckCollisionLineLow(GameState, P2, P1);
-        }
-        else
-        {
-            Result = CheckCollisionLineLow(GameState, P1, P2);
-        }
-    }
-    else
-    {
-        if (P1.y > P2.y)
-        {
-            Result = CheckCollisionLineHigh(GameState, P2, P1);
-        }
-        else
-        {
-            Result = CheckCollisionLineHigh(GameState, P1, P2);
-        }
-    }
-    return(Result);
-    
-#endif
-    
 }
 
 inline void
 WalkLineCheckCollision(game_state *GameState, render_buffer* Render, v2 P1, v2 P2, u32 Thickness, v3 Color)
 {
     // NOTE(Eric): P1 MUST be the source point! Walking the line FROM P1 to P2 - That's the direction!
-#if 1
+    
     line_collision_result CollisionResult = CheckCollisionLine(GameState, P1, P2);
     if (CollisionResult.IsColliding)
     {
@@ -325,138 +318,7 @@ WalkLineCheckCollision(game_state *GameState, render_buffer* Render, v2 P1, v2 P
     {
         RenderLine(Render, CollisionResult.CollisionP, CollisionResult.NewEndP, Thickness, Color);
     }
-#else
     
-    // NOTE(Eric): I believe having this as a variable will let us set this to whatever we want later.
-    // Meaning - colliding with other things.
-    v2 ZeroV2 = V2(0,0);
-    
-    //if (AbsoluteValue(P2.y - P1.y) < AbsoluteValue(P2.x - P1.x))
-    if (P2.y < P1.y) // Going Down
-    {
-        if (P2.x < P1.x) // Going Left
-        {
-            // Down and to the Left
-            v2 CollisionPoint = CheckCollisionLine(GameState, P1, P2);
-            if (CollisionPoint.y > ZeroV2.y)
-            {
-                // Colliding with Left Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with x = 0, so x is negative and just needs to swap
-                v2 NewEndPoint = V2(AbsoluteValue(P2.x), P2.y);
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else if (CollisionPoint.y >= -LINE_HIT_TOLERANCE && CollisionPoint.x > ZeroV2.x)
-            {
-                // Colliding with Bottom Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with y = 0, so y is negative and just needs to swap
-                v2 NewEndPoint = V2(P2.x, AbsoluteValue(P2.y));
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else
-            {
-                // Line didn't collide, so render the last line
-                RenderLine(Render, P2, P1, Thickness, Color);
-            }
-        }
-        else // Going Right
-        {
-            // Down and to the Right
-            v2 CollisionPoint = CheckCollisionLine(GameState, P1, P2);
-            if (CollisionPoint.y > ZeroV2.y && CollisionPoint.x >= GameState->RenderWidth)
-            {
-                // Colliding with Right Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with x >= MAX, so nudge x back in
-                v2 NewEndPoint = V2(P2.x - 2 * (GameState->RenderWidth - P2.x), P2.y);
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-                
-            }
-            else if (CollisionPoint.y >= -LINE_HIT_TOLERANCE && CollisionPoint.x > ZeroV2.x)
-            {
-                // Colliding with Bottom Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with y = 0, so swap Y
-                v2 NewEndPoint = V2(P2.x, AbsoluteValue(P2.y));
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else
-            {
-                RenderLine(Render, P1, P2, Thickness, Color);
-            }
-        }
-    }
-    else // Going Up
-    {
-        if (P2.x < P1.x) // Going Left
-        {
-            // Going Up and Left
-            v2 CollisionPoint = CheckCollisionLine(GameState, P1, P2);
-            if (CollisionPoint.y > ZeroV2.y && CollisionPoint.x >= -LINE_HIT_TOLERANCE && CollisionPoint.x <= LINE_HIT_TOLERANCE)
-            {
-                // Colliding with Left Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with x = 0, so x is negative and just needs to swap
-                v2 NewEndPoint = V2(AbsoluteValue(P2.x), P2.y);
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else if (CollisionPoint.y >= GameState->RenderHeight-LINE_HIT_TOLERANCE && CollisionPoint.x >= ZeroV2.x)
-            {
-                // Colliding with Top Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with y = MAX, change Y to be lower
-                v2 NewEndPoint = V2(P2.x, P2.y - 2 * (P2.y - GameState->RenderHeight));
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else
-            {
-                RenderLine(Render, P1, P2, Thickness, Color);
-            }
-        }
-        else // Going Right
-        {
-            // Going Up and Right
-            v2 CollisionPoint = CheckCollisionLine(GameState, P1, P2);
-            if (CollisionPoint.y > ZeroV2.y && CollisionPoint.x >= GameState->RenderWidth-LINE_HIT_TOLERANCE)
-            {
-                // Colliding with Right Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with x >= MAX, so nudge x back in
-                v2 NewEndPoint = V2(P2.x - 2 * (GameState->RenderWidth - P2.x), P2.y);
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else if (CollisionPoint.y >= GameState->RenderHeight-LINE_HIT_TOLERANCE && CollisionPoint.x >= ZeroV2.x)
-            {
-                // Colliding with Top Boundary
-                RenderLine(Render, P1, CollisionPoint, Thickness, Color);
-                
-                // Colliding with y = MAX, change Y to be lower
-                v2 NewEndPoint = V2(P2.x, P2.y - 2 * (P2.y - GameState->RenderHeight));
-                
-                WalkLineCheckCollision(GameState, Render, CollisionPoint, NewEndPoint, Thickness, Color);
-            }
-            else
-            {
-                RenderLine(Render, P1, P2, Thickness, Color);
-            }
-        }
-    }
-#endif
 }
 
 inline void
@@ -464,7 +326,7 @@ CastAndRenderPlayerLine(game_state *GameState, render_buffer* Render, u32 Thickn
 {
     v2 ScreenP1 = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     
-    real32 RayLength = 10000;
+    real32 RayLength = 1000;
     
     v2 ScreenP2 = V2((RayLength * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                      (RayLength * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GamePointToScreenPoint(GameState, GameState->Player.CenterP);

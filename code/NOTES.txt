@@ -1,3 +1,94 @@
+7/14:
+{
+    Handmade HEro Day 65, Question at 1:11:45
+        Explaination of how his entity system works (beginsim, endsim)
+        useful for what we might do later, or for my next game
+}
+
+7/13:
+{
+    Setting up a non-capped 'array' is easy
+    Just have a Count and a pointer, and increment the pointer up to Count
+    
+}
+
+7/8:
+{
+	Continuing watching handmade hero (just finished ep. 61)
+		Great quote about working through problems and improving:
+		https://youtu.be/bHGLcGgwpWg?t=4312
+		Maybe send this to seth and silas
+
+	
+
+}
+
+6/30:
+{
+Just read a thing on building good habits and removing old ones. good stuff
+'habits-v2.pdf' in my reading folder. james clear article
+
+
+
+}
+
+
+6/29:
+{
+I guess I took a break of about 3 weeks - I wouldn't say I 'burned out', but definitely was not motivated
+
+I just reread this blog post, and it resonated with me (probably did in the past too, but..)
+https://blog.stephsmith.io/you-dont-need-to-quit-your-job-to-make/
+
+It's about compound interest stacking up in a thing you are building up over time.
+"if I were to do this thing regularly, every day, for a year - would my life improve?"
+netflix? no
+emails? no
+drawing? yes
+programming? yes
+
+I also had another Handmade meetup yesterday, so I'm motivated from that too
+I set a goal for myself to have something to show off for our next meeting, at the end of July
+
+Planning on getting back into this today.
+
+
+
+}
+
+
+6/8:
+{
+
+A couple notes after re-reading part 7 - line collisions:
+  Now I'll need to convert this to something I can actually use for the game
+    I should rename a couple of those 'walkline' functions
+  see if changing the thickness of the line works, and at what point the line collides (center?)
+  the line collision stuff is basically seeing if the line collides with a box
+    eventually, the line will collide with all 4 boundaries, but it's the ones that are within bounds we care about
+
+
+OH NO! Oh NOOO! Jon!!
+  'How 3d games do graphics' - 1:35:30 - "y = mx + b is kind of trash, you shouldn't use it"
+    better equation being: ax + by + c = 0 or AX + By = C
+
+holy cow
+
+Our next post is going to be MATH - and it's awesome
+
+our new equation to get our line into standard form is something the bresenham's algorithm already does
+0 = (DY)x - (DX)y + (DX)b     :   where DY = ChangeInY (DeltaY) and DX = ChangeInX (DeltaX)
+
+Mention how I should have read and understood this algorithm before using it!
+It is soooo much more useful/helpful when I understand it!
+For instance, if a point plugged into this equation returns positive, it's ABOVE the line (and neg is below)!!!
+  these are called 'positive half plane' and 'negative half plane'
+
+
+
+
+
+}
 
 5/6:
 {

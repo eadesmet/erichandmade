@@ -47,6 +47,12 @@ struct poly6
     v2 OuterPoints[6];
 };
 
+struct bounding_box
+{
+	v2 Min;
+	v2 Max;
+};
+
 struct game_state
 {
     s32 RenderWidth;
@@ -57,6 +63,7 @@ struct game_state
     player Player;
     
     poly6 TestPoly;
+    bounding_box TestCollisionBox;
     
     u32 AsteroidCount; // Current Count, not total
     asteroid Asteroids[256];
