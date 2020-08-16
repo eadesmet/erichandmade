@@ -1,3 +1,12 @@
+7/15:
+{
+    Today i'd like to maybe clean up some things and remove some unneeded functions
+        if it's only being called once by one thing, it doesn't need to be a function
+
+    One thing I've overlooked so far!
+        Asteroid Collisions with other Asteroids, and with the player!
+}
+
 7/14:
 {
     Handmade HEro Day 65, Question at 1:11:45
@@ -10,14 +19,14 @@
 
     Collision with polygon will be the same thing! just loop through the lines/points!
     Then I think the calculated angle for the new endP will be both lines normalized then added?
-    
+
 }
 
 7/13:
 {
     Setting up a non-capped 'array' is easy
     Just have a Count and a pointer, and increment the pointer up to Count
-    
+
 }
 
 7/8:
@@ -27,7 +36,7 @@
 		https://youtu.be/bHGLcGgwpWg?t=4312
 		Maybe send this to seth and silas
 
-	
+
 
 }
 

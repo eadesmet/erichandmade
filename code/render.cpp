@@ -265,8 +265,8 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 
 inline void
 RenderPlayer(game_state *GameState, render_buffer* Render, player* Player, screen_map *Map)
 {
-    v2 Center = GamePointToScreenPoint(GameState->ScreenCenter, Player->CenterP, false);
-    v2 Front = GamePointToScreenPoint(GameState->ScreenCenter, Player->FrontP, false);
+    v2 Center = GamePointToScreenPoint(Player->CenterP, false);
+    v2 Front = GamePointToScreenPoint(Player->FrontP, false);
 
     real32 OppositeAngle;
     real32 OppositeAngleTop;
@@ -334,11 +334,23 @@ RenderAsteroid(render_buffer* Render, screen_map *Map, asteroid* Asteroid)
 {
     if (Asteroid->State != AsteroidState_Inactive)
     {
-        tile CollidingTile = GetTileAtPosition(Map, Asteroid->CenterP);
-        if (CollidingTile.BottomLeft != V2(0,0)) // TODO(ERIC): do something here for a tile that wasn't found
-            RenderSquare(Render, CollidingTile.BottomLeft, TILE_SIZE, V3(.5,.2,.5));
-
-        RenderCircle(Render, Asteroid->CenterP, Asteroid->Radius, 1, Asteroid->Color);
+        for (u32 PointIndex = 0;
+            PointIndex < Asteroid->PointCount;
+            PointIndex++)
+        {
+            if (PointIndex != Asteroid->PointCount - 1)
+            {
+                v2 P1 = GamePointToScreenPoint(Asteroid->CenterP + *(Asteroid->Points + PointIndex));
+                v2 P2 = GamePointToScreenPoint(Asteroid->CenterP + *(Asteroid->Points + PointIndex + 1));
+                RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
+            }
+            else
+            {
+                v2 P1 = GamePointToScreenPoint(Asteroid->CenterP + *(Asteroid->Points + PointIndex));
+                v2 P2 = GamePointToScreenPoint(Asteroid->CenterP + *Asteroid->Points);
+                RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
+            }
+        }
     }
 }
 
@@ -391,8 +403,6 @@ RenderMap(game_state *GameState, render_buffer* Render, screen_map *Map)
     RenderLine(Render,
                V2(GameState->RenderHalfWidth, 0),
                V2(GameState->RenderHalfWidth, (real32)GameState->RenderHeight), 1, CrosshairColor);
-
-    RenderPlayer(GameState, Render, &GameState->Player, &GameState->Map);
 }
 
 
@@ -428,14 +438,7 @@ RenderWireBoundingBox(render_buffer *Render, v2 Min, v2 Max)
 
 }
 
-internal void
-DrawPoly(render_buffer *Render, poly Polygon, u32 LineThickness, v2 LineColor)
-{
-
-
-
-}
-
+#if 0
 // TODO(Eric): MOVE THESE FUNCTION SOMEWHERE ELSE. Also, is there a better way?
 inline v2
 FindMinPolyP(poly Poly)
@@ -466,3 +469,4 @@ FindMaxPolyP(poly Poly)
 
     return (V2(MaxX, MaxY));
 }
+#endif

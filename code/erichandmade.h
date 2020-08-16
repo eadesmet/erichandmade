@@ -13,6 +13,8 @@
 #define PLAYER_WIDTH 20
 #define PLAYER_LENGTH_TO_CENTER 25
 
+global_variable v2 ScreenCenter;
+
 struct player
 {
     v2 CenterP; // Center of the Triangle
@@ -33,19 +35,14 @@ struct asteroid
     v2 StartP;  // Start Position of movement
     v2 EndP;    // End Position of movement
 
-    real32 Radius;
+    u32 PointCount;
+    v2 Points[16];
+
     real32 Speed;
 
     asteroid_state State;
 
     v3 Color;
-};
-
-struct poly
-{
-    v2 CenterP;
-    u32 PointCount;
-    v2 Points[16];
 };
 
 struct bounding_box
@@ -60,12 +57,8 @@ struct game_state
     s32 RenderHeight;
     real32 RenderHalfWidth;
     real32 RenderHalfHeight;
-    v2 ScreenCenter;
 
     player Player;
-
-    poly TestPoly;
-    //bounding_box TestCollisionBox;
 
     u32 AsteroidCount; // Current Count, not total
     asteroid Asteroids[256];

@@ -1,4 +1,20 @@
 
+internal bool32
+CheckCollisionCircles(v2 CenterA, real32 RadiusA, v2 CenterB, real32 RadiusB)
+{
+    bool32 Result = false;
+
+    real32 DeltaX = CenterB.x - CenterA.x;
+    real32 DeltaY = CenterB.y - CenterA.y;
+
+    real32 Distance = SquareRoot(DeltaX*DeltaX + DeltaY*DeltaY); // NOTE(Eric): This is Inner (v2)
+
+    if (Distance <= ((RadiusA) + (RadiusB)))
+        Result = true;
+
+    return(Result);
+}
+
 internal line_collision_result
 CheckCollisionLines(v2 A, v2 B, v2 C, v2 D)
 {
@@ -73,7 +89,7 @@ CheckCollisionBoundingBox(v2 A, v2 B, bounding_box Box)
         // Colliding with right edge of box - line is going left
 
         // If the previous collision is further away, then this one is closer
-        if (Distance(Result.CollisionP - A) > Distance(RightBoxResult.CollisionP - A))
+        if (Length(Result.CollisionP - A) > Length(RightBoxResult.CollisionP - A))
         {
             Result.CollisionP = RightBoxResult.CollisionP;
             Result.NewEndP = V2(AbsoluteValue(B.x), B.y);
@@ -85,7 +101,7 @@ CheckCollisionBoundingBox(v2 A, v2 B, bounding_box Box)
     if (TopBoxResult.IsColliding)
     {
         // Colliding with top edge of box - line is going down
-        if (Distance(Result.CollisionP - A) > Distance(TopBoxResult.CollisionP - A))
+        if (Length(Result.CollisionP - A) > Length(TopBoxResult.CollisionP - A))
         {
             Result.CollisionP = TopBoxResult.CollisionP;
             Result.NewEndP = V2(B.x, AbsoluteValue(B.y)); // Absolute value is wrong here - it was assuming neg (below bounds)
@@ -96,7 +112,7 @@ CheckCollisionBoundingBox(v2 A, v2 B, bounding_box Box)
     if (BottomBoxResult.IsColliding)
     {
         // Colliding with bottom edge of box - line is going up
-        if (Distance(Result.CollisionP - A) > Distance(BottomBoxResult.CollisionP - A))
+        if (Length(Result.CollisionP - A) > Length(BottomBoxResult.CollisionP - A))
         {
             Result.CollisionP = BottomBoxResult.CollisionP;
             Result.NewEndP = V2(B.x, B.y - 2 * (B.y - Result.CollisionP.y));
@@ -108,38 +124,52 @@ CheckCollisionBoundingBox(v2 A, v2 B, bounding_box Box)
 }
 
 internal line_collision_result
-CheckCollisionPoly(v2 ScreenCenter, v2 A, v2 B, poly Poly)
+CheckCollision_LineAsteroid(v2 A, v2 B, asteroid Asteroid)
 {
-    // Checks collision between line AB and a Rectangle
     // Result CollisionP is first hit
     line_collision_result Result = {};
 
-    for (u32 PointIndex = 0;
-         PointIndex < Poly.PointCount;
-         PointIndex++)
+    v2 ClosestP = {};
+    for (u32 Iteration = 0;
+         Iteration <= 2;
+         Iteration++)
     {
-        v2 P1 = {};
-        v2 P2 = {};
-        if (PointIndex != Poly.PointCount - 1)
+        for (u32 PointIndex = 0;
+             PointIndex < Asteroid.PointCount;
+             PointIndex++)
         {
-            P1 = GamePointToScreenPoint(ScreenCenter, Poly.CenterP + *(Poly.Points + PointIndex));
-            P2 = GamePointToScreenPoint(ScreenCenter, Poly.CenterP + *(Poly.Points + PointIndex + 1));
+            v2 P1 = {};
+            v2 P2 = {};
+            if (PointIndex != Asteroid.PointCount - 1)
+            {
+                P1 = GamePointToScreenPoint(Asteroid.CenterP + *(Asteroid.Points + PointIndex));
+                P2 = GamePointToScreenPoint(Asteroid.CenterP + *(Asteroid.Points + PointIndex + 1));
 
-        }
-        else
-        {
-            P1 = GamePointToScreenPoint(ScreenCenter, Poly.CenterP + *(Poly.Points + PointIndex));
-            P2 = GamePointToScreenPoint(ScreenCenter, Poly.CenterP + *Poly.Points);
+            }
+            else
+            {
+                P1 = GamePointToScreenPoint(Asteroid.CenterP + *(Asteroid.Points + PointIndex));
+                P2 = GamePointToScreenPoint(Asteroid.CenterP + *Asteroid.Points);
+            }
+
+            line_collision_result LinesResult = CheckCollisionLines(A, B, P1, P2);
+            if (LinesResult.IsColliding)
+            {
+                Result.IsColliding = LinesResult.IsColliding;
+
+                real32 CollisionLength = Length(LinesResult.CollisionP);
+                real32 CurrentClosestLength = Length(ClosestP);
+
+                if (CollisionLength <= CurrentClosestLength || ClosestP == V2(0,0))
+                {
+                    Result.CollisionP = LinesResult.CollisionP;
+                }
+                Result.NewEndP = LinesResult.CollisionP; // TODO(Eric): Calculate the new EndP!!!
+            }
         }
 
-        Result = CheckCollisionLines(A, B, P1, P2);
-        if (Result.IsColliding)
-        {
-            break;
-        }
     }
-
-    return(Result);
+    return (Result);
 }
 
 internal void

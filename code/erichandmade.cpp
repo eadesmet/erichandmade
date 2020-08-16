@@ -12,12 +12,83 @@ InitPlayer(game_state *GameState)
 {
     player Result = {};
     Result.CenterP = V2(0,0);//V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
-    Result.FacingDirectionAngle = 200;
+    Result.FacingDirectionAngle = 0;
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
 
     GameState->Player = Result;
 }
+
+internal asteroid
+InitAsteroidA(v2 StartP, v2 EndP)
+{
+    asteroid A = {};
+    A.StartP = StartP;
+    A.CenterP = StartP;
+    A.EndP = EndP;
+    A.Points[0] = V2(0, 2); // Relative to the Center.
+    A.Points[1] = V2(1, 3);
+    A.Points[2] = V2(2, 0); // front
+    A.Points[3] = V2(0, -2);
+    A.Points[4] = V2(-2, 1);
+    A.Points[5] = V2(-1, 1); // Then 5 connects to 0
+    A.PointCount = 6;
+
+    A.State = AsteroidState_Active;
+    A.Speed = 30;
+    A.Color = V3(1,1,1);
+
+    return(A);
+}
+
+internal asteroid
+InitAsteroidB(v2 StartP, v2 EndP)
+{
+    asteroid A = {};
+    A.StartP = StartP;
+    A.CenterP = StartP;
+    A.EndP = EndP;
+    A.Points[0] = V2(0, 4); // Relative to the Center.
+    A.Points[1] = V2(1, 3);
+    A.Points[2] = V2(2, 4);
+    A.Points[3] = V2(4, 2);
+    A.Points[4] = V2(3, 0);
+    A.Points[5] = V2(3, -1);
+    A.Points[6] = V2(2, -2);
+    A.Points[7] = V2(3, -4);
+    A.Points[8] = V2(1, -5);
+    A.Points[9] = V2(-1, -3);
+    A.Points[10] = V2(-2, -1);
+    A.Points[11] = V2(-1, 3);
+    A.PointCount = 12;
+
+    A.State = AsteroidState_Active;
+    A.Speed = 30;
+    A.Color = V3(1,1,1);
+
+    return(A);
+}
+#if 0
+internal asteroid
+InitAsteroidC()
+{
+    asteroid A = {};
+
+    A.Points[0] = V2(0, 2); // Relative to the Center.
+    A.Points[1] = V2(1, 3);
+    A.Points[2] = V2(2, 0); // front
+    A.Points[3] = V2(0, -2);
+    A.Points[4] = V2(-2, 1);
+    A.Points[5] = V2(-1, 1); // Then 5 connects to 0
+    A.PointCount = 6;
+
+    A.State = AsteroidState_Active;
+    A.Speed = 30;
+    A.Color = V3(1,1,1);
+
+    return(A);
+}
+#endif
 
 internal void
 InitAsteroids(game_state *GameState)
@@ -28,60 +99,44 @@ InitAsteroids(game_state *GameState)
     v2 CenterMap = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     v2 RenderMax = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
 
-    v2 P1 = V2(100, 100);
-    v2 P2 = V2(300, 200);
-    v2 P3 = V2(100, 100);
+    v2 P1 = V2(5, 0);
+    v2 P2 = V2(50, 0);
 
-    GameState->AsteroidCount = 0;
+    v2 P3 = V2(15, 0);
+    v2 P4 = V2(50, 0);
 
-    asteroid Asteroid = {};
-    Asteroid.CenterP = P1;
-    Asteroid.StartP = Asteroid.CenterP;
-    Asteroid.EndP = P2;
-    Asteroid.Radius = 30;
-    Asteroid.State = AsteroidState_Active;
-    Asteroid.Speed = 30;
-    Asteroid.Color = V3(1,1,1);
-    GameState->Asteroids[0] = Asteroid;
+    // TODO(Eric): Come up with a scheme to phase asteroids in and out of play.
+    // We have the active/inactive, but we need to be constantly updating this array
+    // and reusing slots.
+    GameState->Asteroids[0] = InitAsteroidA(P1, P2);
     GameState->AsteroidCount++;
 
-    Asteroid = {};
-    Asteroid.CenterP = P2;
-    Asteroid.StartP = Asteroid.CenterP;
-    Asteroid.EndP = P2;
-    Asteroid.Radius = 30;
-    Asteroid.State = AsteroidState_Active;
-    Asteroid.Speed = 30;
-    Asteroid.Color = V3(1,1,1);
-    GameState->Asteroids[1] = Asteroid;
+    GameState->Asteroids[1] = InitAsteroidB(P3, P4);
     GameState->AsteroidCount++;
-    /*
-    Asteroid = {};
-    Asteroid.CenterP = P2;
-    Asteroid.StartP = Asteroid.CenterP;
-    Asteroid.EndP = P1;
-    Asteroid.Radius = ASTEROID_SMALL_R;
-    Asteroid.State = ASTEROIDSTATE_ACTIVE;
-    Asteroid.Speed = ASTEROIDSPEED_SLOW;
-    Asteroid.Color = V3(1,1,1);
-    GameState->Asteroids[2] = Asteroid;
-    GameState->AsteroidCount++;
-    */
+
 }
 
 internal void
 MoveAsteroid(asteroid *Asteroid, real32 dt)
 {
-    v2 DeltaP = Asteroid->EndP - Asteroid->CenterP;
-    real32 Distance = SquareRoot(LengthSq(DeltaP));
+    v2 DeltaP = GamePointToScreenPoint(Asteroid->EndP - Asteroid->CenterP);
+    real32 DistanceRemaining = Length(DeltaP);
 
-    if (Distance > 1)
+    if (DistanceRemaining > 1)
     {
 #if 1
-        v2 ddP = {};
 
-        ddP.x = (DeltaP.x/(dt*60));
-        ddP.y = (DeltaP.y/(dt*60));
+        // TODO(Eric): Rewatch HH movement code to see what dP is and why we need it!
+        // I think we do need it
+        /*
+        v2 DeltaNormal = Normalize(DeltaP);
+        v2 AstDelta = (0.5f*Square(dt) + dP*dt)
+        */
+        // TODO(Eric): Better movement code!
+        // Even if there is only a change in 1 axis, it still moves in both! (can't move straight horizontal)
+        v2 ddP = {};
+        ddP.x = (DeltaP.x)/(dt*600000);
+        ddP.y = (DeltaP.y)/(dt*600000);
 
         real32 MoveX = ddP.x * (dt * Asteroid->Speed);
         real32 MoveY = ddP.y * (dt * Asteroid->Speed);
@@ -99,22 +154,6 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     }
 }
 
-internal bool32
-CheckCollisionAsteroids(asteroid Ast1, asteroid Ast2)
-{
-    bool32 Result = false;
-
-    real32 DeltaX = Ast2.CenterP.x - Ast1.CenterP.x;
-    real32 DeltaY = Ast2.CenterP.y - Ast1.CenterP.y;
-
-    real32 Distance = SquareRoot(DeltaX*DeltaX + DeltaY*DeltaY); // NOTE(Eric): This is Inner (v2)
-
-    if (Distance <= ((Ast1.Radius) + (Ast2.Radius)))
-        Result = true;
-
-    return(Result);
-}
-
 
 //~NOTE(Eric): Game Update and Render
 
@@ -123,6 +162,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 
+    // TODO(Eric): Come up with a way to use TransientStorage (SimRegions? Phasing Asteroids in and out?)
+
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if (!Memory->IsInitialized)
     {
@@ -130,24 +171,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->RenderHeight = Render->Height;
         GameState->RenderHalfWidth = (real32)GameState->RenderWidth * 0.5f;
         GameState->RenderHalfHeight = (real32)GameState->RenderHeight * 0.5f;
-        GameState->ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+        ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
 
         InitMap(GameState);
         InitPlayer(GameState);
+
+        GameState->AsteroidCount = 0;
         InitAsteroids(GameState);
-
-        poly TestPoly = {};
-        TestPoly.CenterP = V2(-18, -8); // In Meters
-        TestPoly.Points[0] = V2(0, 2); // Relative to the Center.
-        TestPoly.Points[1] = V2(1, 3);
-        TestPoly.Points[2] = V2(2, 0); // front
-        TestPoly.Points[3] = V2(0, -2);
-        TestPoly.Points[4] = V2(-2, 1);
-        TestPoly.Points[5] = V2(-1, 1); // Then 5 connects to 0
-        TestPoly.PointCount = 6;
-
-        GameState->TestPoly = TestPoly;
-
 
         Memory->IsInitialized = true;
     }
@@ -159,7 +189,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->RenderHeight = Render->Height;
         GameState->RenderHalfWidth = (real32)GameState->RenderWidth * 0.5f;
         GameState->RenderHalfHeight = (real32)GameState->RenderHeight * 0.5f;
-        GameState->ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
+        ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
 
         InitMap(GameState);
         GameState->Player.CenterP = V2(0,0); //V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
@@ -201,51 +231,38 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->Player.FacingDirectionAngle = 360.0f - PlayerAngleMoveAmount;
     }
 
-    // TODO(Eric): Maybe just make this a global...
-    v2 ScreenCenter = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
-
 
     // Update players position
     GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                                   RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
 
-    // Update TestPoly's position
-    GameState->TestPoly.CenterP.x += Input->dtForFrame;
+    // Update Asteroids
+    for (u32 AsteroidIndex = 0;
+         AsteroidIndex < GameState->AsteroidCount;
+         AsteroidIndex++)
+    {
+        asteroid *Ast = GameState->Asteroids + AsteroidIndex;
+
+        MoveAsteroid(Ast, Input->dtForFrame);
+    }
 
     //
     // NOTE(Eric): Render
     //
     ClearBackground(Render);
     RenderMap(GameState, Render, &GameState->Map);
+    RenderPlayer(GameState, Render, &GameState->Player, &GameState->Map);
 
 
-    // Render TestPoly
-    poly TestPoly = GameState->TestPoly;
-    for (u32 PointIndex = 0;
-         PointIndex < TestPoly.PointCount;
-         PointIndex++)
+    // Render Asteroids
+    for (u32 AsteroidIndex = 0;
+         AsteroidIndex < GameState->AsteroidCount;
+         AsteroidIndex++)
     {
-        if (PointIndex != TestPoly.PointCount - 1)
-        {
-            v2 P1 = GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP + *(TestPoly.Points + PointIndex));
-            v2 P2 = GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP + *(TestPoly.Points + PointIndex + 1));
-            RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
-        }
-        else
-        {
-            v2 P1 = GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP + *(TestPoly.Points + PointIndex));
-            v2 P2 = GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP + *TestPoly.Points);
-            RenderLine(Render, P1, P2, 2, V3(.7,.5,.2));
-        }
-        //GameState->TestPoly.Points[PointIndex].x += Input->dtForFrame;
+        asteroid *Ast = GameState->Asteroids + AsteroidIndex;
+        RenderAsteroid(Render, &GameState->Map, Ast);
     }
 
-    // Render TestPoly's center:
-    RenderSquare(Render, GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP), 3, V3(0,1,1));
-
-    v2 TestPolyMin = GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP+FindMinPolyP(TestPoly));
-    v2 TestPolyMax = GamePointToScreenPoint(GameState->ScreenCenter, TestPoly.CenterP+FindMaxPolyP(TestPoly));
-    RenderWireBoundingBox(Render, TestPolyMin, TestPolyMax);
 
 
     // "Ray" from the player's front
