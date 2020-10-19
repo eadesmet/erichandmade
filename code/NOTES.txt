@@ -1,3 +1,12 @@
+10/14:
+{
+	I'm kind of gearing up to get back into this. Haven't done it yet, but there is a _want_ there.
+
+	Found this link to maybe improve rendering? (see the aliased thick line, the last one)
+		http://members.chello.at/easyfilter/bresenham.html
+
+}
+
 7/15:
 {
     Today i'd like to maybe clean up some things and remove some unneeded functions

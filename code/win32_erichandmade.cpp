@@ -73,6 +73,9 @@ Win32GetWindowDimension(HWND Window)
 internal void
 Win32ProcessKeyboardMessage(game_button_state *NewState, bool32 IsDown)
 {
+    // NOTE(Eric): This EndedDown/IsDown is kinda weird right now.
+    // I was trying to keep Casey's EndedDown stuff in the input handling, as well as my own IsDown
+    NewState->IsDown = IsDown;
     if(NewState->EndedDown != IsDown)
     {
         NewState->EndedDown = IsDown;

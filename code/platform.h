@@ -9,6 +9,7 @@ typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
 typedef int bool32;
+typedef int b32;
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -66,6 +67,7 @@ typedef struct game_button_state
 {
     int HalfTransitionCount;
     bool32 EndedDown;
+    bool32 IsDown;
 } game_button_state;
 
 typedef struct game_controller_input
