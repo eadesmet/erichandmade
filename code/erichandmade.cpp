@@ -36,9 +36,11 @@ internal asteroid
 InitAsteroidA(v2 StartP, v2 EndP)
 {
     asteroid A = {};
-    A.StartP = StartP;
     A.CenterP = StartP;
-    A.EndP = EndP;
+    A.Mass = 1.0f;
+    A.Velocity = V2(1.0f, 1.0f);
+    A.Acceleration = V2(0.0f, 0.0f);
+    
     A.Points[0] = V2(0, 2); // Relative to the Center.
     A.Points[1] = V2(1, 3);
     A.Points[2] = V2(2, 0); // front
@@ -48,7 +50,6 @@ InitAsteroidA(v2 StartP, v2 EndP)
     A.PointCount = 6;
     
     A.State = AsteroidState_Active;
-    A.Speed = 30;
     A.Color = V3(1,1,1);
     
     return(A);
@@ -58,9 +59,11 @@ internal asteroid
 InitAsteroidB(v2 StartP, v2 EndP)
 {
     asteroid A = {};
-    A.StartP = StartP;
     A.CenterP = StartP;
-    A.EndP = EndP;
+    A.Mass = 1.0f;
+    A.Velocity = V2(-2.0f, 1.0f);
+    A.Acceleration = V2(0.0f, 0.0f);
+    
     A.Points[0] = V2(0, 4); // Relative to the Center.
     A.Points[1] = V2(1, 3);
     A.Points[2] = V2(2, 4);
@@ -76,7 +79,6 @@ InitAsteroidB(v2 StartP, v2 EndP)
     A.PointCount = 12;
     
     A.State = AsteroidState_Active;
-    A.Speed = 30;
     A.Color = V3(1,1,1);
     
     return(A);
@@ -129,44 +131,48 @@ InitAsteroids(game_state *GameState)
     
 }
 
+internal v2
+ApplyForces(v2 Velocity, real32 Mass, real32 Drag)
+{
+    v2 Result = {};
+    
+    // NOTE(Eric): Example gravity along the Y-Axis
+    // I'm picturing a future feature where there are 'black-holes' that pull in asteroids, etc.
+    //v2 GravityAcc = V2(0.0f, -9.81f);
+    
+    v2 GravityAcc = V2(0.0f, 0.0f);
+    v2 DragForce = 0.5f * Drag * (Velocity * LengthSq(Velocity));
+    v2 DragAcc = DragForce / Mass;
+    
+    Result = GravityAcc - DragAcc;
+    
+    return (Result);
+}
+
 internal void
 MoveAsteroid(asteroid *Asteroid, real32 dt)
 {
-    // TODO(Eric): Asteroid movement is just wrong, they always move right??
     
-    v2 DeltaP = GamePointToScreenPoint(Asteroid->EndP - Asteroid->CenterP);
-    real32 DistanceRemaining = Length(DeltaP);
     
-    if (DistanceRemaining > 1)
+    //if (WithinGameBounds)
     {
-#if 1
+        // NOTE(Eric): Vertlet Integration
+        Asteroid->CenterP = Asteroid->CenterP + Asteroid->Velocity * dt + Asteroid->Acceleration * (dt * dt * 0.5f);
+        //Asteroid->Acceleration = ApplyForces(Asteroid->Velocity, Asteroid->Mass, 0.1f); // NOTE(Eric): Optional, for gravity, etc.
+        Asteroid->Velocity = Asteroid->Velocity + (Asteroid->Acceleration + Asteroid->Acceleration) * (dt * 0.5f);
         
-        // TODO(Eric): Rewatch HH movement code to see what dP is and why we need it!
-        // I think we do need it
-        /*
-        v2 DeltaNormal = Normalize(DeltaP);
-        v2 AstDelta = (0.5f*Square(dt) + dP*dt)
-        */
-        // TODO(Eric): Better movement code!
-        // Even if there is only a change in 1 axis, it still moves in both! (can't move straight horizontal)
-        v2 ddP = {};
-        ddP.x = (DeltaP.x)/(dt*600000);
-        ddP.y = (DeltaP.y)/(dt*600000);
         
-        real32 MoveX = ddP.x * (dt * Asteroid->Speed);
-        real32 MoveY = ddP.y * (dt * Asteroid->Speed);
+        // NOTE(Eric): Semi-implicit Euler
+        //Asteroid->Velocity = Asteroid->Velocity + (Asteroid->Force / Asteroid->Mass) * dt;
+        //Asteroid->CenterP = Asteroid->CenterP + (Asteroid->Velocity * dt);
         
-        Asteroid->CenterP.x += (real32)(MoveX);
-        Asteroid->CenterP.y += (real32)(MoveY);
-#else
-        Asteroid->CenterP = Mix(Asteroid->CenterP, Asteroid->EndP, .03f);
-#endif
     }
+#if 0
     else
     {
-        Asteroid->CenterP = Asteroid->EndP;
         Asteroid->State = AsteroidState_Inactive;
     }
+#endif
 }
 
 internal void
@@ -229,6 +235,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         InitAsteroids(GameState);
         
         GameState->ProjectileCount = 0;
+        
+        GameState->DebugBoxCount = 0;
         
         Memory->IsInitialized = true;
     }
@@ -369,6 +377,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         RenderProjectile(Render, &GameState->Map, Projectile);
     }
     
+    // Render DEBUG things
+    for (u32 DebugBoxIndex = 0;
+         DebugBoxIndex < GameState->DebugBoxCount;
+         DebugBoxIndex++)
+    {
+        bounding_box *Box = GameState->DebugBoxes + DebugBoxIndex;
+        RenderWireBoundingBox(Render, Box);
+    }
+    
+    Assert(GameState->Map.TileCountX < 50);
     
     // "Ray" from the player's front
     //CastAndRenderPlayerLine(GameState, Render, 1, V3(.3, .8, .8));

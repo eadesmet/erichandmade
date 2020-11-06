@@ -381,12 +381,13 @@ RenderAsteroid(render_buffer* Render, screen_map *Map, asteroid* Asteroid)
 inline void
 RenderAsteroidPositions(render_buffer* Render, asteroid* Asteroid)
 {
-    RenderSquare(Render, Asteroid->CenterP, 2, V3(0,1,0));
-    
+    RenderSquare(Render, GamePointToScreenPoint(Asteroid->CenterP), 2, V3(0,1,0));
+#if 0
     RenderSquare(Render, Asteroid->StartP, 2, V3(0,0,1));
     RenderSquare(Render, Asteroid->EndP, 2, V3(0,1,0));
     
     RenderLine(Render, Asteroid->StartP, Asteroid->EndP, 2, V3(.8,.8,.8));
+#endif
 }
 
 //~ NOTE(Eric): Projectiles
@@ -476,6 +477,21 @@ RenderWireBoundingBox(render_buffer *Render, v2 Min, v2 Max)
     v2 BottomLeft = Min;
     v2 TopRight = Max;
     v2 BottomRight = V2(Max.x, Min.y);
+    
+    RenderLine(Render, BottomLeft, BottomRight, 1, V3(1,1,1));
+    RenderLine(Render, BottomLeft, TopLeft, 1, V3(1,1,1));
+    RenderLine(Render, TopRight, TopLeft, 1, V3(1,1,1));
+    RenderLine(Render, TopRight, BottomRight, 1, V3(1,1,1));
+    
+}
+
+inline void
+RenderWireBoundingBox(render_buffer *Render, bounding_box *Box)
+{
+    v2 TopLeft = V2(Box->Min.x, Box->Max.y);
+    v2 BottomLeft = Box->Min;
+    v2 TopRight = Box->Max;
+    v2 BottomRight = V2(Box->Max.x, Box->Min.y);
     
     RenderLine(Render, BottomLeft, BottomRight, 1, V3(1,1,1));
     RenderLine(Render, BottomLeft, TopLeft, 1, V3(1,1,1));

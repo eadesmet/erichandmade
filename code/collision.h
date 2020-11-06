@@ -8,5 +8,11 @@ struct line_collision_result
     v2 CollisionP;
 };
 
+struct asteroid_collision_result
+{
+    bool32 IsColliding;
+    v2 CollisionP;
+};
+
 
 #endif //COLLISION_H

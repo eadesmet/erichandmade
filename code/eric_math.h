@@ -96,6 +96,17 @@ operator+(v2 A, v2 B)
     return(Result);
 }
 
+inline v2
+operator+(v2 A, real32 B)
+{
+    v2 Result;
+    
+    Result.x = A.x + B;
+    Result.y = A.y + B;
+    
+    return(Result);
+}
+
 inline v2 &
 operator+=(v2 &A, v2 B)
 {
@@ -113,6 +124,14 @@ operator-(v2 A, v2 B)
     Result.y = A.y - B.y;
     
     return(Result);
+}
+
+inline v2 &
+operator-=(v2 &A, v2 B)
+{
+    A = A - B;
+    
+    return(A);
 }
 
 inline v2

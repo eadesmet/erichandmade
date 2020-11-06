@@ -36,13 +36,18 @@ enum asteroid_state
 struct asteroid
 {
     v2 CenterP; // 'Center' of the asteroid
-    v2 StartP;  // Start Position of movement
-    v2 EndP;    // End Position of movement
+    
+    // NOTE(Eric): Force = Mass * Acceleration   |    Acceleration = Force / Mass
+    // NOTE(Eric): Change in Acceleration = Velocity * dt
+    // NOTE(Eric): Change in Velocity = Acceleration * dt
+    
+    v2 Velocity;
+    v2 Acceleration;
+    real32 Mass;
+    
     
     u32 PointCount;
     v2 Points[16];
-    
-    real32 Speed;
     
     asteroid_state State;
     
@@ -81,6 +86,9 @@ struct game_state
     
     u32 ProjectileCount; // Current Count, not total
     projectile Projectiles[256];
+    
+    u32 DebugBoxCount;
+    bounding_box DebugBoxes[256];
     
     // NOTE(Eric): Must be last
     screen_map Map;
@@ -148,5 +156,16 @@ Lerp(v2 A, v2 B, real32 Amount)
     
     return(Result);
 }
+
+//~ NOTE(Eric): Debug Rendering
+inline void
+AddDebugRenderBox(game_state *GameState, bounding_box Box)
+{
+    //Assert(GameState->DebugBoxCount < ArrayCount(GameState->DebugBoxes));
+    if (GameState->DebugBoxCount < 255)
+        GameState->DebugBoxes[++GameState->DebugBoxCount] = Box;
+}
+
+
 
 #endif //ERIC_HANDMADE_H

@@ -205,10 +205,10 @@ CheckCollision_AsteroidPlayer(asteroid *Ast, player *Player)
     return(Result);
 }
 
-internal bool32
+internal asteroid_collision_result
 CheckCollision_AsteroidAsteroid(asteroid *Ast, asteroid *AstTwo)
 {
-    bool32 Result = false;
+    asteroid_collision_result Result = {};
     
     // NOTE(Eric): Checking if each line of the first Asteroid collides with the Second
     for (u32 PointIndex = 0;
@@ -233,12 +233,14 @@ CheckCollision_AsteroidAsteroid(asteroid *Ast, asteroid *AstTwo)
         if (LineResult.IsColliding)
         {
             // Temp, I want to see when they collide
-            Assert(false);
+            //Assert(false);
             
-            Result = true;
+            Result.IsColliding = LineResult.IsColliding;
+            Result.CollisionP = LineResult.CollisionP;
             break;
         }
     }
+    
     
     return(Result);
 }
@@ -246,6 +248,10 @@ CheckCollision_AsteroidAsteroid(asteroid *Ast, asteroid *AstTwo)
 internal void
 HandleAsteroidColissions(game_state *GameState)
 {
+    // TODO(Eric): Also check whether they are inside game bounds
+    // NOTE(Eric): This also has to account for whether it will eventually reach in-bounds
+    //bool32 WithinGameBounds = IsWithinGameBounds(Asteroid);
+    
     // NOTE(Eric): Some distance that will narrow down what Asteroids can collide with other Asteroids
     v2 MaxAsteroidSize = V2(60.0f, 60.0f); // TODO(Eric): meters, or pixels?
     
@@ -273,11 +279,25 @@ HandleAsteroidColissions(game_state *GameState)
                 if (AstTwo->State == AsteroidState_Inactive) continue;
                 if (AstOne->CenterP - AstTwo->CenterP > MaxAsteroidSize) continue;
                 
-                bool32 IsCollidingAsteroid = CheckCollision_AsteroidAsteroid(AstOne, AstTwo);
-                if (IsCollidingAsteroid)
+                asteroid_collision_result CollisionResult = CheckCollision_AsteroidAsteroid(AstOne, AstTwo);
+                if (CollisionResult.IsColliding)
                 {
-                    // TODO(Eric): 'Bounce' the asteroids off of each other (set endP away from eachother?)
-                    Assert(false);
+                    // TODO(Eric): What I actually need to do here is do a 'speculative' collide
+                    // Meaning, calculate the positions for a few timesteps into the future and check
+                    // each one. Solving for a t value exactly where they are _going_ to collide will
+                    // make it much more accurate and likely prevent them getting stuck inside eachother.
+                    // Also, with the current iteration, there are multiple collisions when there should be only 1?
+                    AstOne->Velocity = Lerp(AstTwo->Velocity, AstOne->Velocity, 0.5f);
+                    AstTwo->Velocity = Lerp(AstOne->Velocity, AstTwo->Velocity, 0.5f);
+                    
+                    //AstOne->CenterP += V2(3.0f, 3.0f);
+                    //AstTwo->CenterP -= V2(3.0f, 3.0f);
+                    
+                    //Assert(false);
+                    bounding_box CollisionPoint = {};
+                    CollisionPoint.Min = CollisionResult.CollisionP;
+                    CollisionPoint.Max = CollisionResult.CollisionP + V2(1,1);
+                    AddDebugRenderBox(GameState, CollisionPoint);
                 }
                 else
                 {
