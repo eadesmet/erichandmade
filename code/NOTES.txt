@@ -1,3 +1,68 @@
+11/3:
+{
+	Rethink our mapping towards 'GamePoints' in meters, etc.
+	In HH, it's just a constant value in gamestate that is MetersToPixels,
+	that then gets multiplied or divided
+	He also only deals with that in very few places, so we don't have to think about it so much
+}
+
+11/2:
+{
+	Had an idea last night - adding IMGUI to my asteroids game
+		Though, I don't know how it would work exactly
+		I would think I need to add it to the platform layer, but then it wouldn't be able to access the game data?
+
+
+}
+
+10/23:
+{
+	(30 minutes into HH79, I stopped for now)
+
+	Thinking about the collision loop for all asteroids
+
+	for (ast in AllAsteroids)
+	{
+		AsteroidCollidePlayer(player, ast)
+
+		for (ast2 in AllAsteroids)
+			if ast == ast2 continue;
+			if ast.CenterP - ast2.CenterP > MAX_ASTEROID_SIZE continue; (distance > max size)
+			AsteroidCollideAsteroid(ast, ast2)
+				if collide, bounce off eachother
+
+		for (proj in AllProjectiles)
+			if distance > max size continue
+			AsteroidCollideProjectile(ast, proj)
+				if collide, destroy asteroid +  destroy proj (based on proj type)
+
+	}
+
+	Also thinking about asteroid details / cosmetics
+		struct cosmetic
+			Points[16]
+		struct asteroid
+			comsmetic Cosmetics[16]
+
+		for each cosmetic in asteroid.Cosmetics
+			draw lines between points
+			I'm thinking small lines for detailing
+
+	Also thinking about asteroid rotations
+		there has to be some math that would adjust our list of points around the center at some rate
+
+
+
+		
+}
+
+10/20:
+{
+	Start of HH78:
+		Position != collision
+		break up each entity into pieces, and handle collisions on those pieces
+}
+
 10/14:
 {
 	I'm kind of gearing up to get back into this. Haven't done it yet, but there is a _want_ there.

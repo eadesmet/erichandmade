@@ -265,12 +265,24 @@ RenderCircle(render_buffer* Render, v2 Center, real32 Radius, u32 Thickness, v3 
 inline void
 RenderPlayer(game_state *GameState, render_buffer* Render, player* Player, screen_map *Map)
 {
+    v3 PlayerColor = V3(0.8, 0.8, 0.8);
+    
+    v2 ScreenFront = GamePointToScreenPoint(Player->FrontP, false);
+    v2 ScreenTopP = GamePointToScreenPoint(Player->BackLeftP, false);;
+    v2 ScreenBottomP = GamePointToScreenPoint(Player->BackRightP, false);;
+    
+    RenderLine(Render, ScreenFront, ScreenTopP, 1, PlayerColor);
+    RenderLine(Render, ScreenFront, ScreenBottomP, 1, PlayerColor);
+    RenderLine(Render, ScreenBottomP, ScreenTopP, 1, PlayerColor);
+    
+#if 0
     v2 Center = GamePointToScreenPoint(Player->CenterP, false);
     v2 Front = GamePointToScreenPoint(Player->FrontP, false);
     
-    real32 OppositeAngle;
-    real32 OppositeAngleTop;
-    real32 OppositeAngleBottom;
+    int OppositeAngle;
+    int OppositeAngleTop;
+    int OppositeAngleBottom;
+    
     if (Player->FacingDirectionAngle > 180)
     {
         OppositeAngle = Player->FacingDirectionAngle - 180;
@@ -290,6 +302,12 @@ RenderPlayer(game_state *GameState, render_buffer* Render, player* Player, scree
             OppositeAngleTop = OppositeAngle + 40;
     }
     
+    // NOTE(Eric): This can probably be even simpler: given Angle of front, FrontP, and a length, calculate points
+    OppositeAngle = (int)(Player->FacingDirectionAngle + 180) % 360;
+    OppositeAngleTop = (int)(OppositeAngle + 40) % 360;
+    OppositeAngleBottom = (int)(OppositeAngle - 40) % 360;
+    
+    
     v2 PlayerTopP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
                         RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleTop * Pi32/180)))
                      + Center);
@@ -298,12 +316,14 @@ RenderPlayer(game_state *GameState, render_buffer* Render, player* Player, scree
                            RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
                         + Center);
     
+    
+    
     v3 PlayerColor = V3(0.8, 0.8, 0.8);
     
     RenderLine(Render, Front, PlayerTopP, 1, PlayerColor);
     RenderLine(Render, Front, PlayerBottomP, 1, PlayerColor);
     RenderLine(Render, PlayerBottomP, PlayerTopP, 1, PlayerColor);
-    
+#endif
     
     
 #if 0

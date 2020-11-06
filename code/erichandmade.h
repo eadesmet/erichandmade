@@ -20,6 +20,10 @@ struct player
     v2 CenterP; // Center of the Triangle
     v2 FrontP;  // Point of the front of the ship (where bullets will come out)
     
+    // NOTE(Eric): Added because we need them for collision. Consider creating line struct.
+    v2 BackLeftP;
+    v2 BackRightP;
+    
     real32 FacingDirectionAngle;
 };
 

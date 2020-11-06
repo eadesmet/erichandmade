@@ -15,6 +15,20 @@ InitPlayer(game_state *GameState)
     Result.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(Result.FacingDirectionAngle * Pi32/180)),
                        RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(Result.FacingDirectionAngle * Pi32/180))) + Result.CenterP;
     
+    
+    // NOTE(Eric): Moved from RenderPlayer - Calculating the Back points
+    int OppositeAngle = (int)(Result.FacingDirectionAngle + 180) % 360;
+    int OppositeAngleTop = (int)(OppositeAngle + 40) % 360;
+    int OppositeAngleBottom = (int)(OppositeAngle - 40) % 360;
+    
+    Result.BackLeftP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
+                           RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleTop * Pi32/180)))
+                        + Result.CenterP);
+    
+    Result.BackRightP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleBottom * Pi32/180)),
+                            RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
+                         + Result.CenterP);
+    
     GameState->Player = Result;
 }
 
@@ -99,10 +113,10 @@ InitAsteroids(game_state *GameState)
     v2 RenderMax = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
     
     v2 P1 = V2(5, 0);
-    v2 P2 = V2(50, -50);
+    v2 P2 = V2(20, -20);
     
-    v2 P3 = V2(15, 0);
-    v2 P4 = V2(50, 0);
+    v2 P3 = V2(30, 0);
+    v2 P4 = V2(5, 0);
     
     // TODO(Eric): Come up with a scheme to phase asteroids in and out of play.
     // We have the active/inactive, but we need to be constantly updating this array
@@ -118,6 +132,8 @@ InitAsteroids(game_state *GameState)
 internal void
 MoveAsteroid(asteroid *Asteroid, real32 dt)
 {
+    // TODO(Eric): Asteroid movement is just wrong, they always move right??
+    
     v2 DeltaP = GamePointToScreenPoint(Asteroid->EndP - Asteroid->CenterP);
     real32 DistanceRemaining = Length(DeltaP);
     
@@ -288,6 +304,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // Update players position
     GameState->Player.FrontP = V2(RoundReal32(PLAYER_LENGTH_TO_CENTER * Cos(GameState->Player.FacingDirectionAngle * Pi32/180)),
                                   RoundReal32(PLAYER_LENGTH_TO_CENTER * Sin(GameState->Player.FacingDirectionAngle * Pi32/180))) + GameState->Player.CenterP;
+    // NOTE(Eric): Update players Back points. Move this to a function?
+    int OppositeAngle = (int)(GameState->Player.FacingDirectionAngle + 180) % 360;
+    int OppositeAngleTop = (int)(OppositeAngle + 40) % 360;
+    int OppositeAngleBottom = (int)(OppositeAngle - 40) % 360;
+    
+    GameState->Player.BackLeftP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleTop * Pi32/180)),
+                                      RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleTop * Pi32/180)))
+                                   + GameState->Player.CenterP);
+    
+    GameState->Player.BackRightP = (V2(RoundReal32(PLAYER_HALFWIDTH * Cos(OppositeAngleBottom * Pi32/180)),
+                                       RoundReal32(PLAYER_HALFWIDTH * Sin(OppositeAngleBottom * Pi32/180)))
+                                    + GameState->Player.CenterP);
+    
+    
     
     // Update Asteroids
     for (u32 AsteroidIndex = 0;
@@ -298,6 +328,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         
         MoveAsteroid(Ast, Input->dtForFrame);
     }
+    
+    // NOTE(Eric): I'm not sure where to do this.
+    HandleAsteroidColissions(GameState);
     
     // Update Projectiles
     for (u32 ProjectileIndex = 0;
@@ -324,6 +357,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         asteroid *Ast = GameState->Asteroids + AsteroidIndex;
         RenderAsteroid(Render, &GameState->Map, Ast);
+        RenderAsteroidPositions(Render, Ast);
     }
     
     // Render Projectiles

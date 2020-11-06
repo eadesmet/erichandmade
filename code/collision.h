@@ -9,5 +9,4 @@ struct line_collision_result
 };
 
 
-
 #endif //COLLISION_H
