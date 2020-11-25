@@ -1,3 +1,23 @@
+11/19:
+{
+	TODO: Mess with Transient Arena
+}
+
+11/16:
+{
+    HH - He has those black areas so he can tell if there are any drawing bugs
+    (outside of the actual game area)
+    This might be a good idea to re-implement here.
+}
+
+11/11:
+{
+    I had another idea - to put everything I need to render in an array
+    (similar to HH's 'pushpiece')
+    But all I need in Asteroids is Lines.
+    So I could just push every line I need to draw in an array and do it all at once
+}
+
 11/3:
 {
 	Rethink our mapping towards 'GamePoints' in meters, etc.

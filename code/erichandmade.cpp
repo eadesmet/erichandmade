@@ -222,6 +222,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if (!Memory->IsInitialized)
     {
+        InitializeArena(&GameState->TransientArena, Memory->TransientStorageSize, 
+                        (u8 *)Memory->TransientStorage);
+        
         GameState->RenderWidth = Render->Width;
         GameState->RenderHeight = Render->Height;
         GameState->RenderHalfWidth = (real32)GameState->RenderWidth * 0.5f;
@@ -237,6 +240,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->ProjectileCount = 0;
         
         GameState->DebugBoxCount = 0;
+        
+        
+        // NOTE(Eric): Example Transient memory - Array with just a pointer
+        // Not using "SampleAsteroids" anywhere, I just wanted to get an example down.
+        u32 SampleAsteroidCount = 256;
+        asteroid *SampleAsteroids = PushArray(&GameState->TransientArena, SampleAsteroidCount, asteroid);
+        for (int SampleAsteroidIndex = 0;
+             SampleAsteroidIndex < ArrayCount(SampleAsteroids);
+             SampleAsteroidIndex++)
+        {
+            asteroid *SampleAsteroid = SampleAsteroids + SampleAsteroidIndex;
+            //InitializeAsteroid(SampleAsteroid, ...)
+        }
         
         Memory->IsInitialized = true;
     }

@@ -287,8 +287,8 @@ HandleAsteroidColissions(game_state *GameState)
                     // each one. Solving for a t value exactly where they are _going_ to collide will
                     // make it much more accurate and likely prevent them getting stuck inside eachother.
                     // Also, with the current iteration, there are multiple collisions when there should be only 1?
-                    AstOne->Velocity = Lerp(AstTwo->Velocity, AstOne->Velocity, 0.5f);
-                    AstTwo->Velocity = Lerp(AstOne->Velocity, AstTwo->Velocity, 0.5f);
+                    AstOne->Velocity = -(AstTwo->Velocity);
+                    AstTwo->Velocity = -(AstOne->Velocity);
                     
                     //AstOne->CenterP += V2(3.0f, 3.0f);
                     //AstTwo->CenterP -= V2(3.0f, 3.0f);
@@ -298,6 +298,8 @@ HandleAsteroidColissions(game_state *GameState)
                     CollisionPoint.Min = CollisionResult.CollisionP;
                     CollisionPoint.Max = CollisionResult.CollisionP + V2(1,1);
                     AddDebugRenderBox(GameState, CollisionPoint);
+                    
+                    break;
                 }
                 else
                 {

@@ -19,6 +19,8 @@ typedef uint64_t u64;
 typedef float real32;
 typedef double real64;
 
+typedef size_t memory_index;
+
 #define internal static
 #define local_persist static
 #define global_variable static
@@ -31,6 +33,8 @@ typedef double real64;
 #define Terabytes(Value) (Gigabytes(Value)*1024LL)
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+#define Minimum(A, B) ((A < B) ? (A) : (B))
+#define Maximum(A, B) ((A > B) ? (A) : (B))
 
 #define WIN32_STATE_FILE_NAME_COUNT MAX_PATH
 
@@ -40,6 +44,44 @@ typedef double real64;
 #define Assert(Expression)
 #endif
 
+struct memory_arena
+{
+    memory_index Size;
+    u8 *Base;
+    memory_index Used;
+};
+
+inline void
+InitializeArena(memory_arena *Arena, memory_index Size, void *Base)
+{
+    Arena->Size = Size;
+    Arena->Base = (u8 *)Base;
+    Arena->Used = 0;
+}
+
+#define PushStruct(Arena, type) (type *)PushSize_(Arena, sizeof(type))
+#define PushArray(Arena, Count, type) (type *)PushSize_(Arena, (Count)*sizeof(type))
+inline void *
+PushSize_(memory_arena *Arena, memory_index Size)
+{
+    Assert((Arena->Used + Size) <= Arena->Size);
+    void *Result = Arena->Base + Arena->Used;
+    Arena->Used += Size;
+    
+    return(Result);
+}
+
+#define ZeroStruct(Instance) ZeroSize(sizeof(Instance), &(Instance))
+inline void
+ZeroSize(memory_index Size, void *Ptr)
+{
+    // TODO(casey): Check this guy for performance
+    u8 *Byte = (u8 *)Ptr;
+    while(Size--)
+    {
+        *Byte++ = 0;
+    }
+}
 
 struct render_buffer
 {

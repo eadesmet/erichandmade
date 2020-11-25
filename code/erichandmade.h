@@ -74,6 +74,8 @@ struct bounding_box
 
 struct game_state
 {
+    memory_arena TransientArena;
+    
     s32 RenderWidth;
     s32 RenderHeight;
     real32 RenderHalfWidth;
