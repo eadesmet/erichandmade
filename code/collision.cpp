@@ -287,8 +287,15 @@ HandleAsteroidColissions(game_state *GameState)
                     // each one. Solving for a t value exactly where they are _going_ to collide will
                     // make it much more accurate and likely prevent them getting stuck inside eachother.
                     // Also, with the current iteration, there are multiple collisions when there should be only 1?
-                    AstOne->Velocity = -(AstTwo->Velocity);
-                    AstTwo->Velocity = -(AstOne->Velocity);
+                    
+                    
+                    // Reflection Vector = d - 2(d . n)n
+                    v2 AstOne_Normal = Normalize(AstOne->Velocity);
+                    real32 DotProd = Inner(AstOne->Velocity, AstOne_Normal);
+                    v2 Reflection = AstOne->Velocity - ((2 * DotProd) * AstOne_Normal);
+                    
+                    AstOne->Velocity = Reflection;
+                    
                     
                     //AstOne->CenterP += V2(3.0f, 3.0f);
                     //AstTwo->CenterP -= V2(3.0f, 3.0f);
