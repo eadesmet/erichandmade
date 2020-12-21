@@ -38,8 +38,12 @@ InitAsteroidA(v2 StartP, v2 EndP)
     asteroid A = {};
     A.CenterP = StartP;
     A.Mass = 1.0f;
-    A.Velocity = V2(1.0f, 1.0f);
-    A.Acceleration = V2(0.0f, 0.0f);
+    
+    v2 Direction = Normalize(EndP - StartP);
+    A.Speed = 2.0f;
+    A.Velocity = Direction * A.Speed;
+    
+    A.Acceleration = V2(0.0f, 0.0f); // NOTE(Eric): Should be calculated later from dt and Velocity.
     
     A.Points[0] = V2(0, 2); // Relative to the Center.
     A.Points[1] = V2(1, 3);
@@ -61,8 +65,12 @@ InitAsteroidB(v2 StartP, v2 EndP)
     asteroid A = {};
     A.CenterP = StartP;
     A.Mass = 1.0f;
-    A.Velocity = V2(-2.0f, 1.0f);
-    A.Acceleration = V2(0.0f, 0.0f);
+    
+    v2 Direction = Normalize(EndP - StartP);
+    A.Speed = 2.0f;
+    A.Velocity = Direction * A.Speed;
+    
+    A.Acceleration = V2(0.0f, 0.0f); // NOTE(Eric): Should be calculated later from dt and Velocity.
     
     A.Points[0] = V2(0, 4); // Relative to the Center.
     A.Points[1] = V2(1, 3);
@@ -108,27 +116,39 @@ InitAsteroidC()
 internal void
 InitAsteroids(game_state *GameState)
 {
+    // TODO(Eric): Come up with a scheme to phase asteroids in and out of play.
+    // We have the active/inactive, but we need to be constantly updating this array
+    // and reusing slots.
+    
     // TODO(Eric): Randomize all positions! (and size, and speed)
     random_series Series = RandomSeed(321);
     
     v2 CenterMap = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     v2 RenderMax = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
     
-    v2 P1 = V2(5, 0);
-    v2 P2 = V2(20, -20);
-    
-    v2 P3 = V2(30, 0);
-    v2 P4 = V2(5, 0);
-    
-    // TODO(Eric): Come up with a scheme to phase asteroids in and out of play.
-    // We have the active/inactive, but we need to be constantly updating this array
-    // and reusing slots.
+    v2 P1 = V2(10, 0);
+    v2 P2 = V2(40, 20);
     GameState->Asteroids[0] = InitAsteroidA(P1, P2);
     GameState->AsteroidCount++;
     
+    v2 P3 = V2(30, 0);
+    v2 P4 = V2(5, 10);
     GameState->Asteroids[1] = InitAsteroidB(P3, P4);
     GameState->AsteroidCount++;
     
+    v2 P5 = V2(20, 20);
+    v2 P6 = V2(20, -20);
+    GameState->Asteroids[2] = InitAsteroidA(P5, P6);
+    GameState->AsteroidCount++;
+    
+    v2 P7 = V2(-10, 20);
+    v2 P8 = V2(10, 20);
+    v2 P9 = V2(12, 25);
+    GameState->Asteroids[3] = InitAsteroidA(P7, P9);
+    GameState->AsteroidCount++;
+    
+    GameState->Asteroids[4] = InitAsteroidA(P8, P7);
+    GameState->AsteroidCount++;
 }
 
 internal v2
@@ -157,15 +177,20 @@ MoveAsteroid(asteroid *Asteroid, real32 dt)
     //if (WithinGameBounds)
     {
         // NOTE(Eric): Vertlet Integration
-        Asteroid->CenterP = Asteroid->CenterP + Asteroid->Velocity * dt + Asteroid->Acceleration * (dt * dt * 0.5f);
-        //Asteroid->Acceleration = ApplyForces(Asteroid->Velocity, Asteroid->Mass, 0.1f); // NOTE(Eric): Optional, for gravity, etc.
-        Asteroid->Velocity = Asteroid->Velocity + (Asteroid->Acceleration + Asteroid->Acceleration) * (dt * 0.5f);
-        
+        {
+            Asteroid->CenterP = Asteroid->CenterP + Asteroid->Velocity * dt + Asteroid->Acceleration * (dt * dt * 0.5f);
+            
+            // NOTE(Eric): Optional, for gravity, etc.
+            //Asteroid->Acceleration = ApplyForces(Asteroid->Velocity, Asteroid->Mass, 0.1f);
+            
+            Asteroid->Velocity = Asteroid->Velocity + (Asteroid->Acceleration + Asteroid->Acceleration) * (dt * 0.5f);
+        }
         
         // NOTE(Eric): Semi-implicit Euler
-        //Asteroid->Velocity = Asteroid->Velocity + (Asteroid->Force / Asteroid->Mass) * dt;
-        //Asteroid->CenterP = Asteroid->CenterP + (Asteroid->Velocity * dt);
-        
+        {
+            //Asteroid->Velocity = Asteroid->Velocity + (Asteroid->Force / Asteroid->Mass) * dt;
+            //Asteroid->CenterP = Asteroid->CenterP + (Asteroid->Velocity * dt);
+        }
     }
 #if 0
     else
@@ -240,6 +265,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->ProjectileCount = 0;
         
         GameState->DebugBoxCount = 0;
+        GameState->DebugLineCount = 0;
         
         
         // NOTE(Eric): Example Transient memory - Array with just a pointer
@@ -343,6 +369,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     
     
     
+    // NOTE(Eric): I'm not sure where to do this.
+    HandleAsteroidColissions(GameState, Input->dtForFrame);
+    
     // Update Asteroids
     for (u32 AsteroidIndex = 0;
          AsteroidIndex < GameState->AsteroidCount;
@@ -352,9 +381,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         
         MoveAsteroid(Ast, Input->dtForFrame);
     }
-    
-    // NOTE(Eric): I'm not sure where to do this.
-    HandleAsteroidColissions(GameState);
     
     // Update Projectiles
     for (u32 ProjectileIndex = 0;
@@ -401,7 +427,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         bounding_box *Box = GameState->DebugBoxes + DebugBoxIndex;
         RenderWireBoundingBox(Render, Box);
     }
-    
+    for (u32 DebugLineIndex = 0;
+         DebugLineIndex < GameState->DebugLineCount;
+         DebugLineIndex++)
+    {
+        line *Line = GameState->DebugLines + DebugLineIndex;
+        RenderDebugLine(Render, Line);
+    }
+
     Assert(GameState->Map.TileCountX < 50);
     
     // "Ray" from the player's front

@@ -500,6 +500,12 @@ RenderWireBoundingBox(render_buffer *Render, bounding_box *Box)
     
 }
 
+inline void
+RenderDebugLine(render_buffer *Render, line *Line)
+{
+    RenderLine(Render, Line->P1, Line->P2, 1, Line->Color);
+}
+
 #if 0
 // TODO(Eric): MOVE THESE FUNCTION SOMEWHERE ELSE. Also, is there a better way?
 inline v2

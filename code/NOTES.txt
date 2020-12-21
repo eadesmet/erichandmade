@@ -1,3 +1,8 @@
+12/14:
+{
+        HH Day 92!!! Great resource for rotation/scaling, we need this for our asteroids
+}
+
 11/19:
 {
 	TODO: Mess with Transient Arena

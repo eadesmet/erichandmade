@@ -1,6 +1,7 @@
 #ifndef INTRINSICS_H
 #define INTRINSICS_H
 
+#include <math.h>
 
 inline real32
 SquareRoot(real32 Real32)

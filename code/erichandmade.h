@@ -2,7 +2,6 @@
 #define ERIC_HANDMADE_H
 
 #include "platform.h"
-#include <math.h>
 #include "intrinsics.h"
 #include "eric_math.h"
 #include "tile.h"
@@ -14,6 +13,13 @@
 #define PLAYER_LENGTH_TO_CENTER 25
 
 global_variable v2 ScreenCenter;
+
+struct line
+{
+    v2 P1;
+    v2 P2;
+    v3 Color;
+};
 
 struct player
 {
@@ -45,6 +51,9 @@ struct asteroid
     v2 Acceleration;
     real32 Mass;
     
+    real32 Speed; // NOTE(Eric): Velocity = Direction * Speed
+    
+    b32 IsColliding;
     
     u32 PointCount;
     v2 Points[16];
@@ -91,6 +100,9 @@ struct game_state
     
     u32 DebugBoxCount;
     bounding_box DebugBoxes[256];
+    
+    u32 DebugLineCount;
+    line DebugLines[256];
     
     // NOTE(Eric): Must be last
     screen_map Map;
@@ -166,6 +178,14 @@ AddDebugRenderBox(game_state *GameState, bounding_box Box)
     //Assert(GameState->DebugBoxCount < ArrayCount(GameState->DebugBoxes));
     if (GameState->DebugBoxCount < 255)
         GameState->DebugBoxes[++GameState->DebugBoxCount] = Box;
+}
+
+inline void
+AddDebugRenderLine(game_state *GameState, line Line)
+{
+    //Assert(GameState->DebugBoxCount < ArrayCount(GameState->DebugBoxes));
+    if (GameState->DebugLineCount < 255)
+        GameState->DebugLines[++GameState->DebugLineCount] = Line;
 }
 
 

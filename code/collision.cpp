@@ -232,9 +232,6 @@ CheckCollision_AsteroidAsteroid(asteroid *Ast, asteroid *AstTwo)
         
         if (LineResult.IsColliding)
         {
-            // Temp, I want to see when they collide
-            //Assert(false);
-            
             Result.IsColliding = LineResult.IsColliding;
             Result.CollisionP = LineResult.CollisionP;
             break;
@@ -246,7 +243,7 @@ CheckCollision_AsteroidAsteroid(asteroid *Ast, asteroid *AstTwo)
 }
 
 internal void
-HandleAsteroidColissions(game_state *GameState)
+HandleAsteroidColissions(game_state *GameState, real32 dt)
 {
     // TODO(Eric): Also check whether they are inside game bounds
     // NOTE(Eric): This also has to account for whether it will eventually reach in-bounds
@@ -267,52 +264,61 @@ HandleAsteroidColissions(game_state *GameState)
         {
             // NOTE(Eric): Hit the player - Game over????
         }
-        else
+        
+        for (u32 AsteroidTwoIndex = AsteroidIndex;
+             AsteroidTwoIndex< GameState->AsteroidCount;
+             AsteroidTwoIndex++)
         {
-            for (u32 AsteroidTwoIndex = 0;
-                 AsteroidTwoIndex< GameState->AsteroidCount;
-                 AsteroidTwoIndex++)
+            asteroid *AstTwo = GameState->Asteroids + AsteroidTwoIndex;
+            
+            if (AstTwo == AstOne) continue;
+            if (AstTwo->State == AsteroidState_Inactive) continue;
+            if (AstOne->CenterP - AstTwo->CenterP > MaxAsteroidSize) continue;
+            
+            asteroid_collision_result CollisionResult = CheckCollision_AsteroidAsteroid(AstOne, AstTwo);
+            if (CollisionResult.IsColliding)
             {
-                asteroid *AstTwo = GameState->Asteroids + AsteroidTwoIndex;
+                // TODO(Eric): What I actually need to do here is do a 'speculative' collide
+                // Meaning, calculate the positions for a few timesteps into the future and check
+                // each one. Solving for a t value exactly where they are _going_ to collide will
+                // make it much more accurate and likely prevent them getting stuck inside eachother.
+                // Also, with the current iteration, there are multiple collisions when there should be only 1?
                 
-                if (AstTwo == AstOne) continue;
-                if (AstTwo->State == AsteroidState_Inactive) continue;
-                if (AstOne->CenterP - AstTwo->CenterP > MaxAsteroidSize) continue;
+                // Reflection Vector = d - 2(d . n)n ?????
                 
-                asteroid_collision_result CollisionResult = CheckCollision_AsteroidAsteroid(AstOne, AstTwo);
-                if (CollisionResult.IsColliding)
-                {
-                    // TODO(Eric): What I actually need to do here is do a 'speculative' collide
-                    // Meaning, calculate the positions for a few timesteps into the future and check
-                    // each one. Solving for a t value exactly where they are _going_ to collide will
-                    // make it much more accurate and likely prevent them getting stuck inside eachother.
-                    // Also, with the current iteration, there are multiple collisions when there should be only 1?
-                    
-                    
-                    // Reflection Vector = d - 2(d . n)n
-                    v2 AstOne_Normal = Normalize(AstOne->Velocity);
-                    real32 DotProd = Inner(AstOne->Velocity, AstOne_Normal);
-                    v2 Reflection = AstOne->Velocity - ((2 * DotProd) * AstOne_Normal);
-                    
-                    AstOne->Velocity = Reflection;
-                    
-                    
-                    //AstOne->CenterP += V2(3.0f, 3.0f);
-                    //AstTwo->CenterP -= V2(3.0f, 3.0f);
-                    
-                    //Assert(false);
-                    bounding_box CollisionPoint = {};
-                    CollisionPoint.Min = CollisionResult.CollisionP;
-                    CollisionPoint.Max = CollisionResult.CollisionP + V2(1,1);
-                    AddDebugRenderBox(GameState, CollisionPoint);
-                    
-                    break;
-                }
-                else
-                {
-                }
+                // NOTE(Eric): Perp Operator (HH - Day 91 Bases II)
+                // The Perpendicular line of (x, y) is (-y, x)
+                // So, maybe as a simple collision thing (that isn't physically correct..)
+                // We could just change the velocity to the perpendicular of the other velocity
+                // NOTE(Eric): Rotation and Scalding (HH - Day 91 Bases II)
+                // x-axis = cos(theta), sin(theta) => sqrt(cos^2(theta) + cos^2(theta)) = 1
+                // y-axis = perp(x-axis)
+                
+                v2 Norm1 = Normalize(AstOne->Velocity);
+                v2 Norm2 = Normalize(AstTwo->Velocity);
+                
+                // TODO(Eric): This is 0 when the velocity negates itself, currently causing a crash
+                Assert(AstTwo->Velocity + AstOne->Velocity != V2(0,0));
+                AstOne->Velocity = Normalize(AstTwo->Velocity + AstOne->Velocity) * AstOne->Speed;
+                AstOne->IsColliding = true;
+                AstTwo->IsColliding = true;
+                
+                AstTwo->Velocity = V2(0,0);
+                
+                
+                bounding_box CollisionPointBox = {};
+                CollisionPointBox.Min = CollisionResult.CollisionP;
+                CollisionPointBox.Max = CollisionResult.CollisionP + V2(1,1);
+                AddDebugRenderBox(GameState, CollisionPointBox);
+                
+                break;
+            }
+            else
+            {
+                AstOne->IsColliding = false;
             }
         }
+        
         
     }
 }
