@@ -10,10 +10,11 @@ CheckCollisionLine(game_state *GameState, v2 P1, v2 P2)
 
     v2 ClosestP = {};
     for (u32 AsteroidIndex = 0;
-         AsteroidIndex < GameState->AsteroidCount;
+         AsteroidIndex < GameState->EntityCount;
          AsteroidIndex++)
     {
-        asteroid *Ast = GameState->Asteroids + AsteroidIndex;
+        entity *Ast = GameState->Entities + AsteroidIndex;
+        if (Ast->Type != EntityType_Asteroid) continue;
         line_collision_result AstCollisionResult = CheckCollision_LineAsteroid(P1, P2, *Ast);
 
         if (AstCollisionResult.IsColliding)

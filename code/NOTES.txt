@@ -1,3 +1,11 @@
+1/28/2021:
+{
+    Ok, I broke everything
+    Trying out converting all asteroids and projectiles in to entities
+    don't feel like debugging it right now. Just want a new project. patiently waiting for star code galaxy.
+
+}
+
 12/14:
 {
         HH Day 92!!! Great resource for rotation/scaling, we need this for our asteroids
@@ -78,7 +86,7 @@
 
 
 
-		
+
 }
 
 10/20:

@@ -531,9 +531,9 @@ inline random_series
 RandomSeed(u32 Value)
 {
     random_series Series;
-    
+
     Series.Index = (Value % ArrayCount(RandomNumberTable));
-    
+
     return(Series);
 }
 
@@ -545,7 +545,7 @@ RandomNextUInt32(random_series *Series)
     {
         Series->Index = 0;
     }
-    
+
     return(Result);
 }
 
@@ -554,7 +554,7 @@ RandomUnilateral(random_series *Series)
 {
     real32 Divisor = 1.0f / (real32)MaxRandomNumber;
     real32 Result = Divisor*(real32)RandomNextUInt32(Series);
-    
+
     return(Result);
 }
 
@@ -562,7 +562,7 @@ inline u32
 RandomChoice(random_series *Series, u32 ChoiceCount)
 {
     u32 Result = (RandomNextUInt32(Series) % ChoiceCount);
-    
+
     return(Result);
 }
 
@@ -570,7 +570,7 @@ inline real32
 RandomBetween(random_series *Series, real32 Min, real32 Max)
 {
     real32 Result = Mix(Min, Max, RandomUnilateral(Series));
-    
+
     return(Result);
 }
 
@@ -578,7 +578,7 @@ inline s32
 RandomBetween(random_series *Series, s32 Min, s32 Max)
 {
     s32 Result = Min + (s32)(RandomNextUInt32(Series)%((Max + 1) - Min));
-    
+
     return(Result);
 }
 

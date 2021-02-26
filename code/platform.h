@@ -19,6 +19,9 @@ typedef uint64_t u64;
 typedef float real32;
 typedef double real64;
 
+typedef float f32;
+typedef double f64;
+
 typedef size_t memory_index;
 
 #define internal static
@@ -67,7 +70,7 @@ PushSize_(memory_arena *Arena, memory_index Size)
     Assert((Arena->Used + Size) <= Arena->Size);
     void *Result = Arena->Base + Arena->Used;
     Arena->Used += Size;
-    
+
     return(Result);
 }
 
@@ -93,13 +96,13 @@ struct render_buffer
 typedef struct game_memory
 {
     bool32 IsInitialized;
-    
+
     u64 PermanentStorageSize;
     void *PermanentStorage; // NOTE(casey): REQUIRED to be cleared to zero at startup
-    
+
     u64 TransientStorageSize;
     void *TransientStorage; // NOTE(casey): REQUIRED to be cleared to zero at startup
-    
+
     //debug_platform_free_file_memory *DEBUGPlatformFreeFileMemory;
     //debug_platform_read_entire_file *DEBUGPlatformReadEntireFile;
     //debug_platform_write_entire_file *DEBUGPlatformWriteEntireFile;
@@ -118,7 +121,7 @@ typedef struct game_controller_input
     bool32 IsAnalog;
     real32 StickAverageX;
     real32 StickAverageY;
-    
+
     union
     {
         game_button_state Buttons[12];
@@ -128,20 +131,20 @@ typedef struct game_controller_input
             game_button_state MoveDown;
             game_button_state MoveLeft;
             game_button_state MoveRight;
-            
+
             game_button_state ActionUp;
             game_button_state ActionDown;
             game_button_state ActionLeft;
             game_button_state ActionRight;
-            
+
             game_button_state LeftShoulder;
             game_button_state RightShoulder;
-            
+
             game_button_state Back;
             game_button_state Start;
-            
+
             // NOTE(casey): All buttons must be added above this line
-            
+
             game_button_state Terminator;
         };
     };
@@ -151,9 +154,9 @@ typedef struct game_input
 {
     game_button_state MouseButtons[5];
     s32 MouseX, MouseY, MouseZ;
-    
+
     real32 dtForFrame;
-    
+
     game_controller_input Controllers[5];
 } game_input;
 
@@ -168,7 +171,7 @@ inline game_controller_input
 *GetController(game_input *Input, int unsigned ControllerIndex)
 {
     Assert(ControllerIndex < ArrayCount(Input->Controllers));
-    
+
     game_controller_input *Result = &Input->Controllers[ControllerIndex];
     return(Result);
 }

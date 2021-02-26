@@ -12,7 +12,10 @@
 #define PLAYER_WIDTH 20
 #define PLAYER_LENGTH_TO_CENTER 25
 
+#define SHOT_RATE 1
+
 global_variable v2 ScreenCenter;
+global_variable b32 IsPaused = true;
 
 struct line
 {
@@ -25,85 +28,89 @@ struct player
 {
     v2 CenterP; // Center of the Triangle
     v2 FrontP;  // Point of the front of the ship (where bullets will come out)
-    
+
     // NOTE(Eric): Added because we need them for collision. Consider creating line struct.
     v2 BackLeftP;
     v2 BackRightP;
-    
+
     real32 FacingDirectionAngle;
+
+    real32 ShotTimer;
+    u32 Score;
 };
 
-enum asteroid_state
+enum entity_type
 {
-    AsteroidState_Inactive = 0x0,
-    AsteroidState_Active = 0x1,
+	EntityType_None,
+
+	EntityType_Asteroid,
+	EntityType_Projectile,
+	EntityType_DebugLine,
+
+	EntityType_Count
 };
 
-struct asteroid
+enum entity_state
 {
-    v2 CenterP; // 'Center' of the asteroid
-    
-    // NOTE(Eric): Force = Mass * Acceleration   |    Acceleration = Force / Mass
+	EntityState_InActive,
+	EntityState_Active,
+
+	EntityState_Count
+};
+
+struct entity
+{
+	v2 CenterP;
+
+	// NOTE(Eric): Force = Mass * Acceleration   |    Acceleration = Force / Mass
     // NOTE(Eric): Change in Acceleration = Velocity * dt
     // NOTE(Eric): Change in Velocity = Acceleration * dt
-    
-    v2 Velocity;
-    v2 Acceleration;
-    real32 Mass;
-    
-    real32 Speed; // NOTE(Eric): Velocity = Direction * Speed
-    
-    b32 IsColliding;
-    
-    u32 PointCount;
-    v2 Points[16];
-    
-    asteroid_state State;
-    
-    v3 Color;
-};
+	v2 Velocity;
+	v2 Acceleration;
+	f32 Mass;
+	f32 Speed; // NOTE(Eric): Velocity = Direction * Speed
 
-// NOTE(Eric): Trying out what players shooting might be like, no idea what I'm doing yet.
-struct projectile
-{
-    // TODO(Eric): I think these should store their own IDs, so we can actually manage the arrays
-    real32 ShootDirectionAngle;
-    
-    v2 P1;
-    v2 P2;
-    
-    b32 IsActive;
+	b32 IsColliding;
+
+	u32 PointCount;
+	v2 Points[16];
+
+	entity_type Type;
+	entity_state State;
+
+	// TODO(Eric): This should be Temporary! We can probably caluclate it from the points
+	real32 ShootDirectionAngle;
+
+	v3 Color;
 };
 
 struct bounding_box
 {
 	v2 Min;
 	v2 Max;
+	b32 Fill;
 };
 
 struct game_state
 {
     memory_arena TransientArena;
-    
+
     s32 RenderWidth;
     s32 RenderHeight;
     real32 RenderHalfWidth;
     real32 RenderHalfHeight;
-    
+
     player Player;
-    
-    u32 AsteroidCount; // Current Count, not total
-    asteroid Asteroids[256];
-    
-    u32 ProjectileCount; // Current Count, not total
-    projectile Projectiles[256];
-    
+
+    u32 EntityCount;
+    entity Entities[256];
+
     u32 DebugBoxCount;
-    bounding_box DebugBoxes[256];
-    
+    bounding_box DebugBoxes[512];
+
     u32 DebugLineCount;
     line DebugLines[256];
-    
+
     // NOTE(Eric): Must be last
     screen_map Map;
 };
@@ -142,14 +149,14 @@ inline real32
 Mix(real32 A, real32 B, real32 Amount)
 {
     real32 Result = (1-Amount) * A + Amount * B;
-    
+
     return(Result);
 }
 inline real32
 Lerp(real32 A, real32 B, real32 Amount)
 {
     real32 Result = (1-Amount) * A + Amount * B;
-    
+
     return(Result);
 }
 inline v2
@@ -158,7 +165,7 @@ Mix(v2 A, v2 B, real32 Amount)
     v2 Result = {};
     Result.x = (1-Amount) * A.x + Amount * B.x;
     Result.y = (1-Amount) * A.y + Amount * B.y;
-    
+
     return(Result);
 }
 inline v2
@@ -167,7 +174,7 @@ Lerp(v2 A, v2 B, real32 Amount)
     v2 Result = {};
     Result.x = (1-Amount) * A.x + Amount * B.x;
     Result.y = (1-Amount) * A.y + Amount * B.y;
-    
+
     return(Result);
 }
 
