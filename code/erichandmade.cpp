@@ -5,6 +5,8 @@
 #include "collision.cpp"
 #include "walkline.cpp"
 
+#include "hash.h"
+
 //~ NOTE(Eric): Init functions
 internal void
 InitPlayer(game_state *GameState)
@@ -123,23 +125,33 @@ InitAsteroids(game_state *GameState, u32 Seed)
     // and reusing slots.
 
     random_series Series = RandomSeed(Seed*4);
-
+/*
     v2 CenterMap = V2(GameState->RenderHalfWidth, GameState->RenderHalfHeight);
     v2 RenderMax = V2((real32)GameState->RenderWidth, (real32)GameState->RenderHeight);
-
     s32 MinAsteroidCount = 30;
     s32 MaxAsteroidCount = 60;
     s32 MinPosition = -48;
     s32 MaxPosition = 48;
-    v2 MaxAsteroidSize = V2(6.0f, 6.0f); // NOTE(Eric): Copied from 'HandleAsteroidCollisions'
+*/
+    v2 MaxAsteroidSize = V2(9.0f, 9.0f); // NOTE(Eric): Shared with 'HandleAsteroidCollisions'. Make it global?
 
-    u8 AstSlots[16][16] = {};
+    u32 SlotCountX = RoundReal32ToUInt32(PixelsToMeters((real32)GameState->RenderWidth) / MaxAsteroidSize.x);
+    u32 SlotCountY = RoundReal32ToUInt32(PixelsToMeters((real32)GameState->RenderHeight) / MaxAsteroidSize.y);
+    u32 TotalSlotsCount = SlotCountX * SlotCountY;
 
-    // 16 x 16 Grid of available spots (256 total)
-    // Each spot is relative to the position in meters
-    //
-
-
+    ast_slot *AstSlots = PushArray(&GameState->TransientArena, TotalSlotsCount, ast_slot);
+    //ast_slot AstSlots[2048];
+/*
+    for (u32 Y = 0; Y < SlotCountY; ++Y)
+    {
+        for (u32 X = 0; X < SlotCountX; ++X)
+        {
+            ast_slot *TheSlot = AstSlots + Y*SlotCountX+X;
+            TheSlot->Index = V2((real32)X,(real32)Y);
+            TheSlot->Taken = false;
+        }
+    }
+*/
     u32 NumOfAsteroids = 30;
     for (u8 AstIndex = 1;           // NOTE(Eric): 1-30
          AstIndex <= NumOfAsteroids;
@@ -148,11 +160,13 @@ InitAsteroids(game_state *GameState, u32 Seed)
         b32 AsteroidPlaced = false;
         do
         {
-            s32 RandI = RandomBetween(&Series, 0, 15);
-            s32 RandJ = RandomBetween(&Series, 0, 15);
-            if (!AstSlots[RandI][RandJ])
+            s32 RandI = RandomBetween(&Series, 0, SlotCountX);
+            s32 RandJ = RandomBetween(&Series, 0, SlotCountY);
+            ast_slot *Slot = AstSlots + RandJ*SlotCountX+RandI;
+            if (!Slot->Taken)
             {
-                AstSlots[RandI][RandJ] = AstIndex;
+                Slot->Index = V2((real32)RandI, (real32)RandJ);
+                Slot->Taken = true;
                 AsteroidPlaced = true;
             }
         } while(!AsteroidPlaced); // NOTE(Eric): The number of times this runs is unknown!
@@ -161,40 +175,45 @@ InitAsteroids(game_state *GameState, u32 Seed)
     // NOTE(Eric): This Romps anything in Entities beforehand, so Asteroids are always the first slots
     u32 EntityIndex = 0;
     for (u32 i = 0;
-         i < 16;
+         i < SlotCountY;
          ++i)
     {
         for (u32 j = 0;
-             j < 16;
+             j < SlotCountX;
              ++j)
         {
-            // Convert the index to a number between -48 and 48
+            ast_slot *Slot = AstSlots + i*SlotCountX+j;
+            if (!Slot || !Slot->Taken) continue;
 
-            // First convert it to 0-96
-            real32 I_Base96 = (i/15.0f)*96;
+            // Convert the index (0 - SlotCount) into (-1/2 Slot Count - 1/2 Slot Count)
+            real32 ConvertedI = j - (SlotCountX*.5f);
+            real32 ConvertedJ = i - (SlotCountY*.5f);
 
-            // Then convert it to -48-48 by subtracting
-            real32 ConvertedI = I_Base96 - 48;
+            ConvertedI *= MaxAsteroidSize.y;
+            ConvertedJ *= MaxAsteroidSize.x;
 
-            real32 J_Base96 = (j/15.0f)*96;
-            real32 ConvertedJ = J_Base96 - 48;
-
+#if 0
             bounding_box Box = {};
             Box.Min = GamePointToScreenPoint(V2(ConvertedI, ConvertedJ));
-            Box.Max = GamePointToScreenPoint(V2(ConvertedI+6, ConvertedJ+6));
-            //Box.Fill = AstSlots[i][j];
+            Box.Max = GamePointToScreenPoint(V2(ConvertedI+MaxAsteroidSize.x, ConvertedJ+MaxAsteroidSize.y));
             AddDebugRenderBox(GameState, Box);
-#if 1 // TODO(Eric): WHY IS THIS CHANGING THE POSITIONS OF ALL THE BOXES!?!?!?
+
+
+
             bounding_box CenterBox = {};
-            CenterBox.Min = GamePointToScreenPoint(V2(ConvertedI+3, ConvertedJ+3));
-            CenterBox.Max = GamePointToScreenPoint(V2(ConvertedI+3.1f, ConvertedJ+3.1f));
+            CenterBox.Min = GamePointToScreenPoint(V2(ConvertedI+(MaxAsteroidSize.x*.5f),
+                                                      ConvertedJ+(MaxAsteroidSize.y*.5f)));
+            CenterBox.Max = GamePointToScreenPoint(V2(ConvertedI+(MaxAsteroidSize.x*.6f),
+                                                      ConvertedJ+(MaxAsteroidSize.y*.6f)));
             CenterBox.Fill = true;
             AddDebugRenderBox(GameState, CenterBox);
 #endif
-            if (!AstSlots[i][j]) continue; //@temporarily moved from above
 
-            v2 P1 = V2(ConvertedI, ConvertedJ);
-            v2 P2 = V2(0,0); // TODO(Eric): Come up with a randomized second position
+            v2 P1 = V2(ConvertedI+(MaxAsteroidSize.x*.5f), ConvertedJ+(MaxAsteroidSize.y*.5f));
+
+            real32 RandomX = RandomBetween(&Series, -MaxAsteroidSize.x*3, MaxAsteroidSize.x*3);
+            real32 RandomY = RandomBetween(&Series, -MaxAsteroidSize.y*3, MaxAsteroidSize.y*3);
+            v2 P2 = V2(RandomX, RandomY);
 
             if (EntityIndex % 2 == 0)
             {
@@ -207,6 +226,7 @@ InitAsteroids(game_state *GameState, u32 Seed)
             GameState->EntityCount++;
         }
     }
+
 
 
 #if 0

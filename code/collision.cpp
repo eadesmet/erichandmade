@@ -256,7 +256,7 @@ HandleAsteroidColissions(game_state *GameState, entity *TestAsteroid, real32 dt)
     //bool32 WithinGameBounds = IsWithinGameBounds(Asteroid);
 
     // NOTE(Eric): Some distance that will narrow down what Asteroids can collide with other Asteroids
-    v2 MaxAsteroidSize = V2(60.0f, 60.0f); // TODO(Eric): meters, or pixels?
+    v2 MaxAsteroidSize = V2(9.0f, 9.0f);
 
     if (TestAsteroid->Type != EntityType_Asteroid) return; //NOTE(Eric): This is now redundant
     if (TestAsteroid->State == EntityState_InActive) return;

@@ -414,7 +414,7 @@ RenderAsteroidPositions(render_buffer* Render, entity* Asteroid)
     RenderLine(Render, Screen_AsteroindCenterP, Screen_VelocityNormal, 2, V3(0,1,0));
 
     // NOTE(Eric): Circle of 'MaxAsteroidSize'
-    RenderCircle(Render, GamePointToScreenPoint(Asteroid->CenterP), 6.0f*METERS_TO_PIXELS, 1, v3{1,1,1});
+    RenderCircle(Render, GamePointToScreenPoint(Asteroid->CenterP), 4.5f*METERS_TO_PIXELS, 1, v3{1,1,1});
 }
 
 //~ NOTE(Eric): Projectiles
@@ -537,10 +537,14 @@ RenderWireBoundingBox(render_buffer *Render, bounding_box *Box)
     v2 TopRight = Box->Max;
     v2 BottomRight = V2(Box->Max.x, Box->Min.y);
 
-    RenderLine(Render, BottomLeft, BottomRight, 1, V3(1,1,1));
-    RenderLine(Render, BottomLeft, TopLeft, 1, V3(1,1,1));
-    RenderLine(Render, TopRight, TopLeft, 1, V3(1,1,1));
-    RenderLine(Render, TopRight, BottomRight, 1, V3(1,1,1));
+    v3 Color = {};
+    if (Box->Color == V3(0,0,0))
+        Color = v3{1,1,1};
+
+    RenderLine(Render, BottomLeft, BottomRight, 1, Color);
+    RenderLine(Render, BottomLeft, TopLeft, 1, Color);
+    RenderLine(Render, TopRight, TopLeft, 1, Color);
+    RenderLine(Render, TopRight, BottomRight, 1, Color);
 
     if (Box->Fill)
     {
@@ -561,7 +565,13 @@ RenderUI(game_state *GameState, render_buffer *Render, real32 dt)
 {
     // TODO(Eric): I should scale all of these positions so I can move this 'UI' wherever I want.
 
-    // NOTE(Eric): Shoot reload timer. The time in somewhat off, might have to do with framerate
+    // NOTE(Eric): Shoot reload timer. The time in somewhat off
+    // TODO(Eric): I CAN FIX THIS!!!! USE LERP TO GET A NUMBER BETWEEN 'ALLOWEDTOSHOOT' AND 'DT_INCREMENTED'
+
+    real32 val = Lerp(GameState->Player.ShotTimer, (real32)SHOT_RATE, dt);
+
+
+
     real32 Scale = SHOT_RATE * 5;
 
     v2 Min = {20,20};
@@ -594,6 +604,10 @@ RenderUI(game_state *GameState, render_buffer *Render, real32 dt)
         RenderRect(Render, {ScoreBox.Max.x+20, ScoreBox.Min.y},
                            {ScoreBox.Max.x+300, ScoreBox.Max.y}, v3{1,0,0});
     }
+
+    // NOTE(Eric): DEBUGGING: Show Scale of 1 meter
+    //RenderLine(Render, GamePointToScreenPoint(V2(0,-10)),
+    //                   GamePointToScreenPoint(V2(1,-10)), 3, v3{1,0,1});
 
 }
 

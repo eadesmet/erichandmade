@@ -88,7 +88,9 @@ struct bounding_box
 {
 	v2 Min;
 	v2 Max;
+
 	b32 Fill;
+	v3 Color;
 };
 
 struct game_state
@@ -183,7 +185,7 @@ inline void
 AddDebugRenderBox(game_state *GameState, bounding_box Box)
 {
     //Assert(GameState->DebugBoxCount < ArrayCount(GameState->DebugBoxes));
-    if (GameState->DebugBoxCount < 255)
+    if (GameState->DebugBoxCount < ArrayCount(GameState->DebugBoxes)-1)
         GameState->DebugBoxes[++GameState->DebugBoxCount] = Box;
 }
 
@@ -191,7 +193,7 @@ inline void
 AddDebugRenderLine(game_state *GameState, line Line)
 {
     //Assert(GameState->DebugBoxCount < ArrayCount(GameState->DebugBoxes));
-    if (GameState->DebugLineCount < 255)
+    if (GameState->DebugLineCount < ArrayCount(GameState->DebugLines)-1)
         GameState->DebugLines[++GameState->DebugLineCount] = Line;
 }
 
