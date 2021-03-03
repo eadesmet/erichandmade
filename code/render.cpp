@@ -568,22 +568,31 @@ RenderUI(game_state *GameState, render_buffer *Render, real32 dt)
     // NOTE(Eric): Shoot reload timer. The time in somewhat off
     // TODO(Eric): I CAN FIX THIS!!!! USE LERP TO GET A NUMBER BETWEEN 'ALLOWEDTOSHOOT' AND 'DT_INCREMENTED'
 
-    real32 val = Lerp(GameState->Player.ShotTimer, (real32)SHOT_RATE, dt);
+    real32 ShotTimer = GameState->Player.ShotTimer;
+    real32 ShotRate = (real32)SHOT_RATE;
 
+    real32 val = Lerp(dt, ShotRate, ShotTimer);
 
+    // Allowed to shoot when: ShotTimer >= SHOT_RATE
+    // So the number I need is a % between ShotTimer up to SHOT_RATE
+    // When ShotTimer == SHOT_RATE, % is 100
+    // when ShotTimer == 0, % is 0
 
-    real32 Scale = SHOT_RATE * 5;
+    // Now with this percentage, convert it to the X-coord that I need
+    // Max X-Coord is SHOT_RATE * 5 * 20
+    // Min X-Coord is 20
+
+    real32 ShotMaxX = ShotRate*5*20;
 
     v2 Min = {20,20};
-    v2 Max = {20*Scale,40};
+    v2 Max = {ShotMaxX,40};
     bounding_box ShotTimerOutline = {Min,Max};
     RenderWireBoundingBox(Render, &ShotTimerOutline);
 
-    real32 Progress = GameState->Player.ShotTimer; // X-coord
-    real32 Rate = 20.0f*Scale;
+    real32 ShotProgressX = Lerp(Min.x, ShotMaxX, val);
 
     v2 ProgMin = {25,25};
-    v2 ProgMax = v2{Clamp(ProgMin.x, (ProgMin.x + (Rate*Progress)), Max.x-5), 35};
+    v2 ProgMax = v2{Clamp(ProgMin.x, ShotProgressX, Max.x-5), 35};
     RenderRect(Render, ProgMin, ProgMax, v3{0,1,1});
 
 
