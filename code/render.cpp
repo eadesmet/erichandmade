@@ -565,30 +565,16 @@ RenderUI(game_state *GameState, render_buffer *Render, real32 dt)
 {
     // TODO(Eric): I should scale all of these positions so I can move this 'UI' wherever I want.
 
-    // NOTE(Eric): Shoot reload timer. The time in somewhat off
-    // TODO(Eric): I CAN FIX THIS!!!! USE LERP TO GET A NUMBER BETWEEN 'ALLOWEDTOSHOOT' AND 'DT_INCREMENTED'
-
+    // NOTE(Eric): Shot Reload Timer
     real32 ShotTimer = GameState->Player.ShotTimer;
     real32 ShotRate = (real32)SHOT_RATE;
-
-    real32 val = Lerp(dt, ShotRate, ShotTimer);
-
-    // Allowed to shoot when: ShotTimer >= SHOT_RATE
-    // So the number I need is a % between ShotTimer up to SHOT_RATE
-    // When ShotTimer == SHOT_RATE, % is 100
-    // when ShotTimer == 0, % is 0
-
-    // Now with this percentage, convert it to the X-coord that I need
-    // Max X-Coord is SHOT_RATE * 5 * 20
-    // Min X-Coord is 20
-
     real32 ShotMaxX = ShotRate*5*20;
-
     v2 Min = {20,20};
     v2 Max = {ShotMaxX,40};
     bounding_box ShotTimerOutline = {Min,Max};
     RenderWireBoundingBox(Render, &ShotTimerOutline);
 
+    real32 val = Lerp(dt, ShotRate, ShotTimer);
     real32 ShotProgressX = Lerp(Min.x, ShotMaxX, val);
 
     v2 ProgMin = {25,25};

@@ -540,6 +540,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
              EntityIndex++)
         {
             entity *Entity = GameState->Entities + EntityIndex;
+
+            // TODO(Eric): Possibly 'phase out' inactive entities here; then generate more below?
             if (Entity->State == EntityState_InActive) continue;
 
             switch (Entity->Type)
