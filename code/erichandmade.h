@@ -121,65 +121,9 @@ struct game_state
 
 
 //~ NOTE(Eric): Functions
-inline int
-Clamp(int Min, int Value, int Max)
-{
-    if (Value < Min) return Min;
-    if (Value > Max) return Max;
-    return Value;
-}
 
-inline real32
-Clamp(real32 Min, real32 Value, real32 Max)
-{
-    if (Value < Min) return Min;
-    if (Value > Max) return Max;
-    return Value;
-}
 
-inline u32
-GetColor(v3 Values)
-{
-    u32 Result = ((RoundReal32ToUInt32(Values.r * 255.0f) << 16) |
-                  (RoundReal32ToUInt32(Values.g * 255.0f) << 8) |
-                  (RoundReal32ToUInt32(Values.b * 255.0f) << 0));
-    return(Result);
-}
-
-// NOTE(Eric): Linear Interpolation or lerp
-inline real32
-Mix(real32 A, real32 B, real32 Amount)
-{
-    real32 Result = (1-Amount) * A + Amount * B;
-
-    return(Result);
-}
-inline real32
-Lerp(real32 A, real32 B, real32 Amount)
-{
-    real32 Result = (1-Amount) * A + Amount * B;
-
-    return(Result);
-}
-inline v2
-Mix(v2 A, v2 B, real32 Amount)
-{
-    v2 Result = {};
-    Result.x = (1-Amount) * A.x + Amount * B.x;
-    Result.y = (1-Amount) * A.y + Amount * B.y;
-
-    return(Result);
-}
-inline v2
-Lerp(v2 A, v2 B, real32 Amount)
-{
-    v2 Result = {};
-    Result.x = (1-Amount) * A.x + Amount * B.x;
-    Result.y = (1-Amount) * A.y + Amount * B.y;
-
-    return(Result);
-}
-
+// TODO(Eric): Why are these here?
 //~ NOTE(Eric): Debug Rendering
 inline void
 AddDebugRenderBox(game_state *GameState, bounding_box Box)

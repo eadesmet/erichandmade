@@ -108,6 +108,11 @@ GamePointToScreenPoint(v2 GamePoint, bool32 UseMeters = true)
     return(Result);
 
 }
+inline v2
+GPToSP(v2 GamePoint, bool32 UseMeters = true)
+{
+    return (GamePointToScreenPoint(GamePoint, UseMeters));
+}
 
 // TODO(Eric): Probably don't want something like this? Everything should be converted to GamePoints
 inline v2
@@ -128,8 +133,12 @@ ScreenPointToGamePoint(v2 ScreenPoint, bool32 UseMeters = true)
 
     return(Result);
 }
+inline v2
+SPToGP(v2 ScreenPoint, bool32 UseMeters = true)
+{
+    return (ScreenPointToGamePoint(ScreenPoint, UseMeters));
+}
 
-// TODO(Eric): BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD BAD
 inline real32
 PixelsToMeters(real32 Pixel)
 {

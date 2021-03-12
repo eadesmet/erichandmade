@@ -4,8 +4,8 @@
 #include "render.cpp"
 #include "collision.cpp"
 #include "walkline.cpp"
-
 #include "hash.h"
+#include "rasterize.cpp"
 
 //~ NOTE(Eric): Init functions
 internal void
@@ -393,12 +393,15 @@ MoveProjectile(game_state *GameState, entity *Projectile, real32 dt)
 
 //~NOTE(Eric): Game Update and Render
 
+global_variable game_memory *DebugMemory;
+
 // (render_buffer *Render, game_memory *Memory, game_input *Input)
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 
-    // TODO(Eric): Come up with a way to use TransientStorage (SimRegions? Phasing Asteroids in and out?)
+    DebugMemory = Memory;
+    BEGIN_TIMED_BLOCK(GameUpdateAndRender);
 
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if (!Memory->IsInitialized)
@@ -587,12 +590,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     //
     // NOTE(Eric): Render
     //
+    BEGIN_TIMED_BLOCK(AllRendering);
+
     ClearBackground(Render);
     //RenderMap(GameState, Render, &GameState->Map);
     RenderUI(GameState, Render, Input->dtForFrame);
     RenderPlayer(GameState, Render, &GameState->Player, &GameState->Map);
-
-
+#if 0
     for (u32 EntityIndex = 0;
          EntityIndex < GameState->EntityCount;
          EntityIndex++)
@@ -615,11 +619,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
         }
     }
-
+#endif
     // TODO(Eric): Idea! (2/24/2021): Once all of the asteroids are Inactive, call InitAsteroids again (with different seed)
     //  to start 'Level 2' !!
     // Then we can save level data and scores easy
 
+    DrawTriangle(Render,
+                 GPToSP(GameState->Player.BackLeftP, false),
+                 GPToSP(GameState->Player.FrontP, false),
+                 GPToSP(GameState->Player.BackRightP, false));
 
     // Render DEBUG things
     for (u32 DebugBoxIndex = 0;
@@ -636,8 +644,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         line *Line = GameState->DebugLines + DebugLineIndex;
         RenderDebugLine(Render, Line);
     }
+    END_TIMED_BLOCK(AllRendering);
 
     Assert(GameState->Map.TileCountX < 50);
+
+    END_TIMED_BLOCK(GameUpdateAndRender);
 
     // "Ray" from the player's front
     //CastAndRenderPlayerLine(GameState, Render, 1, V3(.3, .8, .8));

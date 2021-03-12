@@ -93,6 +93,18 @@ struct render_buffer
     BITMAPINFO Bitmap;
 };
 
+struct debug_timer
+{
+    u64 CycleCount;
+    u64 HitCount;
+};
+enum
+{
+    DebugTimer_GameUpdateAndRender,
+    DebugTimer_AllRendering,
+    DebugTimer_Count
+};
+
 typedef struct game_memory
 {
     bool32 IsInitialized;
@@ -106,7 +118,15 @@ typedef struct game_memory
     //debug_platform_free_file_memory *DEBUGPlatformFreeFileMemory;
     //debug_platform_read_entire_file *DEBUGPlatformReadEntireFile;
     //debug_platform_write_entire_file *DEBUGPlatformWriteEntireFile;
+
+    debug_timer DebugTimers[DebugTimer_Count];
+
 } game_memory;
+
+#if _MSC_VER
+#define BEGIN_TIMED_BLOCK(ID) u64 StartCycleCount##ID = __rdtsc();
+#define END_TIMED_BLOCK(ID) DebugMemory->DebugTimers[DebugTimer_##ID].CycleCount += __rdtsc() - StartCycleCount##ID; ++DebugMemory->DebugTimers[DebugTimer_##ID].HitCount;
+#endif
 
 typedef struct game_button_state
 {
@@ -159,8 +179,6 @@ typedef struct game_input
 
     game_controller_input Controllers[5];
 } game_input;
-
-
 
 
 #define GAME_UPDATE_AND_RENDER(name) void name(render_buffer *Render, game_memory *Memory, game_input *Input)

@@ -1,4 +1,40 @@
 
+
+internal bool32
+CheckEdge(v2 V0, v2 V1, v2 P)
+{
+    // TODO(Eric): This function needs to assume the 'edge' is counter-clockwise
+    // I _think_ that means that V1 must be greater than V0
+    if (V0 > V1)
+    {
+        v2 Temp = V0;
+        V0 = V1;
+        V1 = Temp;
+    }
+
+    real32 Result = (V0.y - V1.y)*P.x + (V1.x - V0.x)*P.y + (V0.x*V1.y - V0.y*V1.x);
+
+    if (Result >= 0) // If it's 0, it lies on the edge
+        return true;
+    return false;
+}
+
+// TODO(Eric): These two aren't used yet
+// But, I think can be extended to any polygon?
+// Or maybe convert/test all my asteroids into/as a bunch of triangles?
+
+internal bool32
+CheckP_WithinTriangle(v2 V0, v2 V1, v2 V2, v2 P)
+{
+    bool32 Result = false;
+
+    Result = (CheckEdge(V0, V1, P) &&
+              CheckEdge(V1, V2, P) &&
+              CheckEdge(V2, V0, P));
+
+    return(Result);
+}
+
 internal bool32
 CheckCollisionCircles(v2 CenterA, real32 RadiusA, v2 CenterB, real32 RadiusB)
 {
@@ -144,7 +180,6 @@ CheckCollision_LineAsteroid(v2 A, v2 B, entity Asteroid)
             {
                 P1 = GamePointToScreenPoint(Asteroid.CenterP + *(Asteroid.Points + PointIndex));
                 P2 = GamePointToScreenPoint(Asteroid.CenterP + *(Asteroid.Points + PointIndex + 1));
-
             }
             else
             {
@@ -243,7 +278,6 @@ CheckCollision_AsteroidAsteroid(entity *Ast, entity *AstTwo)
             break;
         }
     }
-
 
     return(Result);
 }

@@ -72,7 +72,7 @@ RenderSquare(render_buffer *Render, v2 Pos, u32 Size, v3 Color)
             X < Pos2.x;
             ++X)
         {
-            *Pixel++ = Color;
+            *Pixel++ = ColorValue;
         }
 
         Row += Pitch;

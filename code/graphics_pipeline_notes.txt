@@ -1,0 +1,211 @@
+
+
+--------------- Handmade Hero Day 236 ---------------
+[How Graphics Cards Work]
+
+GPU is dedicated hardware built-in for graphics
+
+how CPU and GPU works is clunky/legacy
+
+[Typical Desktop Setup]
+CPU     MAIN MEMORY (16 GBs for example)   GPU   GPU MEMORY (1GB for example)     SCREEN
+---     --------------------------------   ---   ----------------------------     ------
+
+   ---->
+                                        -------->
+                                                                             ---->
+
+Handmade Hero so far:
+Our game goes from Main Memory to the GPU Memory to get output to the screen via HDMI cable.
+
+The desktop setup is essentially the 'worst case'
+Mobile setups where memory is shared between CPU and GPU
+So we can't really build for mobile/shared memory, then go up to a desktop setup
+	it just wouldn't work
+
+
+
+
+
+CPU    SYSTEM RAM           GRAPHICS RAM        GPU
+                   PCI BUS
+---    ----------           ------------        ---
+
+  ---->           <------->              <------
+
+              Much Latency Here
+
+
+CPU and GPU are devices designed differently that make different trade-offs
+	they are getting closer together, but they started very far apart (hitorically)
+
+CPU in 1999                                                  GPU 1999
+                       Processing Unit of 2030
+  ------------------>                           <-----------------
+
+A long time ago, a CPU was mostly operating SISD (Single Instruction, Single data)
+Tended to be things used for serial execution
+	Fast, single thread, single line execution
+	heterogenous instruction stream, very random
+
+GPU incredibly specific thing
+	takes blocks, and tries to fill them in with pixels
+	very predictable
+	Specific coordinates, filling them out, stretching them, etc.
+	Has blending
+	very specific memory usage
+	always reads in little quadrants, knows to read sections of textures for writing
+	does tons of writes
+
+They looked very different back then
+As CPUs started hitting barriers on how fast it could run, these moved closer together
+
+Perf Purpose stuff ----------->       <------- General Purpose Stuff
+CPU 2016                                       GPU 2016
+      --->                                  <---
+  8 16-wide SIMD                              16 32-wide SIMD
+
+
+We don't necessarily know exactly how GPUs work (nvidia won't tell us, basically)
+
+Now GPUs are a TON of ALUs (arithmetic logic units) -> _mm_mul_ps(a,b) a0 x b0, a1 x b1, etc. etc.
+														Instead of 4 or 8 wide,
+														They are more like 16-wide or 32-wide
+
+Take in a giant number of floating point values, and they do some arithmetic ops on them (add, mul, etc)
+	on GPUs description, you'll see things like 'Core Count'
+	Titan: "CUDA Cores: 2880"
+		This number is completely ridiculous
+		CUDA Core = GPU Cores X Width of ALU X # of ALUs
+		ex:                           16     X   4
+		so it's this number TIMES what they actual number of cores there are
+
+		It has nothing to do what you actually think an actual core is.
+
+ALUs instuction sets are much simpler than CPU
+
+Operations on the GPU is similar to operations on a CPU, just wider.
+	instead of doing 4-across like HMH rasterizer was doing, they do 4x4 and just 'unpack' them linearly
+	actually very similar to HMH rasterizer, doing masking etc.
+
+Shader code (very much like CPU code now) is executed 16-wide
+
+"Shader code" != "CPU code"
+CPU has tons of branches, jumps, random memory access, etc.
+	GPUs aren't set up to do that
+
+	You can't just execute CPU code in a shader and expect it to be faster
+		GPU has lower clock rates usually, and more cores
+		so it's about how parallelizable the code is, basically
+
+
+With masking in mind, how does an if statement work on CPU vs GPU
+
+CPU
+---
+y = 5;       ----> Take location of 5 into y
+if (x)       ----> Load in x, run a test instruction on it
+  y += 7;    ----> Jump based on the result of the comparison
+               --> If x, then write into y, else don't
+
+Thinking of code in terms of either-or, if this, do that, etc.
+
+DOES NOT WORK like that in GPU, because it's 16 wide!
+	so what does this mean in GPU
+
+	It first does the test to see which slots of the wide lane to the branch
+		then it computes fully the results of the first branch, and the results of the second branch
+		then uses the mask of results and ANDs them all together to get the final result
+
+	ifs with a jump just become an optimization
+		it's not the actual control flow
+			the control flow actually _always_ goes through both branches
+			the only time it won't is if _all_ the instructions lie on one side or the other of the branch
+
+
+change your mental model of code on a GPU vs CPU
+All code paths are taken the maximum amount of times
+	a loop for example
+		if you have 16 numbers, and the last number needs 100 iterations for example,
+			then ALL numbers will go through 100 iterations
+
+We have no idea with how sophisticated GPU developers get with optimizations on these things
+
+Casey doesn't know much about how the GPU gives/schedules work to the ALUs
+
+
+the concept of "mapped" memory
+	a portion of system RAM "mapped" to graphics RAM
+		travels the PCI lane to the graphics card
+		when changes made on either side, it gets passed over
+
+	since this happens a lot, GPUs now have DMA Transfer Controllers
+		"Copy Engines"
+
+		parts of the chip that sit there and only take instruction from you on where to grab stuff
+			grabbing stuff from system memory and grabbing it into GPU memory
+			it just has to be a part of memory that the DMA controller can see
+
+		so what "mapped" memory means nowadays, just means that the DMA controller can see those parts of memory
+
+	remember that the CPU has "Virtual Memory"
+		some might be paged out to disc, etc.
+
+		So if the GPU needs some memory, it better be in system RAM
+		so we need to actually "lock it down" so it doesn't leave RAM until DMA controller can finish getting it
+
+		less about shared memory and exchanging between, and more about "transfers" between memories
+
+		This is exactly what we need to do if we want to transfer our image down to the graphics card
+
+But we need a way to tell the GPU to "come get this memory"
+This is where a PushBuffer comes in
+
+CPU     Main Memory
+---     -----------
+CPU --> Executing Handmade Hero
+        ______  V
+        OpenGL32.DLL
+
+HH Calls OpenGL things
+	this prepares some PushBuffer data (we don't know, we can't even see this, what nvidia is doing)
+
+CPU prepares the push buffer (or "Command Buffer")
+at some point, it's going to take a "ring transition"
+	CPUs have a concept of rings, ring1, ring2, ring-1, etc.
+		don't need to know about these really
+	We just see a virtual address space, but the kernel knows what's going on
+	basically these rings of priveleges ensures things happen properly
+
+	HH running in RingX
+	The pushbuffer gets transfered to Ring0
+		Then does a "kickoff"
+		This triggers the transfer to the GPU so the GPU can start working on this pushbuffer
+
+We build up this pushbuffer using OpenGL calls
+	We can't build it manually because we don't know the format!
+		(different for every graphics card)
+	once we have constucted this, we at some point trust that the driver will take this ring transition
+	and start the kickoff
+
+Very buffer-driven
+	You build up buffers, then you say go render this and it does.
+	We kickoff this process and keep doing other work, waiting for the result
+
+Steps for day 237:
+1) Transfer our bitmap from main memory to the GPU memory
+2) tell it that we'd like to draw it to the screen
+	probably draw two triangles that will encompass the whole screen
+	those two triangles have to map to our bitmap
+		Do this with a direct copy
+3) display
+
+---------
+|\      |
+| \     |
+|  \    |
+|   \   |    (this, only wide like a screen)(the two triangles)
+|    \  |
+|     \ |
+|      \|
+---------

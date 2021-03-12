@@ -1,3 +1,17 @@
+3/10/2021:
+{
+    I've been reading this: https://fgiesen.wordpress.com/2013/02/06/the-barycentric-conspirac/
+
+    TODO: Change all collision functions to check the
+}
+
+3/8/2021:
+{
+    Went through HH 235 and followed along: Got a pink screen using OpenGL
+
+
+}
+
 3/4/2021:
 {
     I've been doing really good, making lots of progress!

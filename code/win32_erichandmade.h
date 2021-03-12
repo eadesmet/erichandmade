@@ -19,13 +19,13 @@ struct win32_state
     u64 TotalSize;
     void *GameMemoryBlock;
     win32_replay_buffer ReplayBuffers[4];
-    
+
     HANDLE RecordingHandle;
     int InputRecordingIndex;
-    
+
     HANDLE PlaybackHandle;
     int InputPlayingIndex;
-    
+
     char EXEFileName[WIN32_STATE_FILE_NAME_COUNT];
     char *OnePastLastEXEFileNameSlash;
 };
@@ -40,12 +40,12 @@ struct win32_game_code
 {
     HMODULE GameCodeDLL;
     FILETIME DLLLastWriteTime;
-    
+
     // IMPORTANT(casey): Either of the callbacks can be 0!  You must
     // check before calling.
     game_update_and_render *UpdateAndRender;
-    
-    
+
+
     bool32 IsValid;
 };
 
@@ -56,7 +56,7 @@ struct win32_debug_time_marker
     DWORD OutputLocation;
     DWORD OutputByteCount;
     DWORD ExpectedFlipPlayCursor;
-    
+
     DWORD FlipPlayCursor;
     DWORD FlipWriteCursor;
 };
@@ -78,21 +78,21 @@ CatStrings(size_t SourceACount, char *SourceA,
            size_t DestCount, char *Dest)
 {
     // TODO(casey): Dest bounds checking!
-    
+
     for(int Index = 0;
         Index < SourceACount;
         ++Index)
     {
         *Dest++ = *SourceA++;
     }
-    
+
     for(int Index = 0;
         Index < SourceBCount;
         ++Index)
     {
         *Dest++ = *SourceB++;
     }
-    
+
     *Dest++ = 0;
 }
 
@@ -112,7 +112,33 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
     return(Result);
 }
 
+inline void
+HandleDebugTimers(game_memory *Memory)
+{
+    OutputDebugStringA("DEBUG CYCLE COUNTERS\n");
+    for (int Counter = 0;
+         Counter <= ArrayCount(Memory->DebugTimers);
+         ++Counter)
+    {
+        debug_timer *Timer = Memory->DebugTimers + Counter;
 
+        if (Timer->HitCount)
+        {
+            char TextBuffer[256];
+            _snprintf_s(TextBuffer, sizeof(TextBuffer),
+                        "   %d:  %I64ucy, %I64uh, %I64ucy/h\n",
+                        Counter,
+                        Timer->CycleCount,
+                        Timer->HitCount,
+                        Timer->CycleCount / Timer->HitCount);
+            OutputDebugStringA(TextBuffer);
+
+            Timer->CycleCount = 0;
+            Timer->HitCount = 0;
+        }
+    }
+
+}
 
 //~ NOTE(Eric): XInput
 
@@ -144,23 +170,23 @@ Win32LoadXInput(void)
         // TODO(casey): Diagnostic
         XInputLibrary = LoadLibraryA("xinput9_1_0.dll");
     }
-    
+
     if(!XInputLibrary)
     {
         // TODO(casey): Diagnostic
         XInputLibrary = LoadLibraryA("xinput1_3.dll");
     }
-    
+
     if(XInputLibrary)
     {
         XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
         if(!XInputGetState) {XInputGetState = XInputGetStateStub;}
-        
+
         XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
         if(!XInputSetState) {XInputSetState = XInputSetStateStub;}
-        
+
         // TODO(casey): Diagnostic
-        
+
     }
     else
     {
