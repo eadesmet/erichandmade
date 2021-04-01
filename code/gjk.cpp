@@ -37,8 +37,8 @@ HandleLineSimplex(simplex *Simplex, v2 *Direction)
 {
     // TODO(Eric): Handle edge case when the Origin lies on the line.
     
-    v2 A = (Simplex->First + Simplex->Count)->P;
-    v2 B = (Simplex->First + Simplex->Count-1)->P;
+    v2 A = (Simplex->Nodes + Simplex->Count-1)->P;
+    v2 B = (Simplex->Nodes + Simplex->Count-2)->P;
     
     v2 BA = B - A;
     v2 BO = Origin - B;
@@ -61,18 +61,32 @@ internal b32
 HandleTriangleSimplex(simplex *Simplex, v2 *Direction)
 {
     // NOTE(Eric): We now have 3 points in the simplex, find which reigon of space the origin lies
-    v2 A = (Simplex->First + Simplex->Count)->P;
-    v2 B = (Simplex->First + Simplex->Count-1)->P;
-    v2 C = (Simplex->First + Simplex->Count-2)->P;
+    v2 A = (Simplex->Nodes + Simplex->Count-1)->P;
+    v2 B = (Simplex->Nodes + Simplex->Count-2)->P;
+    v2 C = (Simplex->Nodes + Simplex->Count-3)->P;
     
     v2 AB = B - A;
     v2 AC = C - A;
     v2 AO = Origin - A;
     
-    // TODO(Eric): Finish
+    v2 ABPerp = Perp(AB);
+    v2 ACPerp = Perp(AC);
     
+    if (Inner(ABPerp, AO) > 0) // In Region AB
+    {
+        RemoveSimplexP(Simplex, Simplex->Count-2); // Remove C
+        *Direction = ABPerp;
+        return(false);
+    }
+    else if (Inner(ACPerp, AO) > 0) // In Region AC
+    {
+        RemoveSimplexP(Simplex, Simplex->Count-2); // Remove B
+        *Direction = ACPerp;
+        return(false);
+    }
     
-    return(false);
+    // Our triangle contains the origin
+    return(true);
 }
 
 internal b32
@@ -97,7 +111,7 @@ GJK(entity *E1, entity *E2)
     // TODO(Eric): THIS MEANS EVERY ENTITY WILL ALWAYS BE COLLIDING IF WE DON'T CONVERT THEM FIRST
     
     // The Simplex is a triangle within the Minkowski difference
-    simplex Simplex = {};
+    simplex Simplex = NewSimplex();
     
     // The first direction (can be picked randomly, but this is standard)
     v2 D = Normalize(E2->CenterP - E1->CenterP);
@@ -106,20 +120,29 @@ GJK(entity *E1, entity *E2)
     AddSimplexP(&Simplex, Support(E1, E2, D));
     
     // Next direction is Towards the origin
-    D = Origin - Simplex.First->P;
+    D = Origin - Simplex.Nodes[0].P;
     while(true)
     {
         // New support point, towards the origin
         AddSimplexP(&Simplex, Support(E1, E2, D));
         
         // If the new support point is not past the origin, then we are not colliding
-        v2 NewestPoint = (Simplex.First + Simplex.Count)->P;
+        v2 NewestPoint = Simplex.Nodes[Simplex.Count-1].P;
         if (Inner(NewestPoint, D) < 0)
             return(false);
         
         if (HandleSimplex(&Simplex, &D))
             return(true);
     }
-    
-    
+}
+
+internal entity
+ConvertConcaveToConvex(entity *E)
+{
+    for (u32 Index = 0; Index < E->PointCount; Index++)
+    {
+        v2 *P = E->Points + Index;
+        
+        // TODO(Eric): This.
+    }
 }
