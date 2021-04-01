@@ -126,7 +126,7 @@ HandleDebugTimers(game_memory *Memory)
         {
             char TextBuffer[256];
             _snprintf_s(TextBuffer, sizeof(TextBuffer),
-                        "   %d:  %I64ucy, %I64uh, %I64ucy/h\n",
+                        "   %d:  %I64u cycles, %I64u hits, %I64u cycles/hit\n",
                         Counter,
                         Timer->CycleCount,
                         Timer->HitCount,

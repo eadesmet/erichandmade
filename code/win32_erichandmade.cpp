@@ -313,11 +313,66 @@ Win32DisplayBufferInWindow(render_buffer *Buffer,
                   DIB_RGB_COLORS, SRCCOPY);
 #else
 
-    // @HH: 235
+    // @HH: 235-236
     glViewport(0, 0, WindowWidth, WindowHeight);
     glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    SwapBuffers(DeviceContext);
+    //glClear(GL_COLOR_BUFFER_BIT);
+
+    glBindTexture(GL_TEXTURE_2D, 1);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Buffer->Width, Buffer->Height, 0,
+                 GL_BGRA_EXT, GL_UNSIGNED_BYTE, Buffer->Pixels);
+
+    glEnable(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    // Whenever you have an incoming color, multiply them together.
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+
+
+    // These are what our Coordinates? are multiplied by when they go through opengl
+    // Setting them to Identity (all 1s) means just pass them through
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();         // Clear the GL_TEXTURE mode to an Identity matrix
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();         // Clear the GL_MODELVIEW mode to an Identity matrix
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();         // Clear the GL_PROJECTION mode to an Identity matrix
+
+    glBegin(GL_TRIANGLES);
+
+    real32 P = 0.9f;
+    // Bottom Triangle
+    //glColor3f(1.0f, 1.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(-P, -P);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(P, -P);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(P, P);
+
+    // Top Triangle
+    //glColor3f(1.0f, 0.0f, 1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(-P, -P);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(P, P);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(-P, P);
+
+    glEnd();
+
+
+    SwapBuffers(DeviceContext); // Put the buffer to the viewport
 #endif
 }
 

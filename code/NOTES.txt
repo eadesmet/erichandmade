@@ -1,3 +1,47 @@
+3/31/2021:
+{
+	Now on HH 103, 24 in
+
+	I've now got rotation of asteroids working, and I'm pretty happy with the result
+	however, now we have some more collision bugs where asteroids phase through eachother
+
+	diving into some of the collision code, I'm realizing some things we could update
+		The asteroids could have 'line's instead  of points
+			this might make looping easier, because then the last two points is just considered
+			as another line
+		
+		The current logic goes something like this
+			check two asteroids
+				check all points of asteroid1 against asteroid2
+					check all points of asteroid2 against each line of asteroid1
+
+		shouldn't it just be 'check if point is within polygon'?
+			there are algorithms for this
+			I've been trying to read this: https://erich.realtimerendering.com/ptinpoly/
+				the code examples from this are hard to read
+
+
+	Collision with rotation is hard
+	https://guide.handmadehero.org/code/day072/#4323
+
+	I wrote a lot of code around the point in polygon paper
+	but, it's maybe not great. or efficient. Can't spell, I'm tired.
+
+
+}
+
+3/23/2021:
+{
+    Now on HH 100, 49:43 in
+}
+
+3/19/2021:
+{
+    starting watching HH 238 (for the opengl stuff, that's where I'm at. about 10 min in)
+
+    starting watching HH 99 (I think? this is where I left off before, roughly. about 28 min in)
+}
+
 3/10/2021:
 {
     I've been reading this: https://fgiesen.wordpress.com/2013/02/06/the-barycentric-conspirac/
