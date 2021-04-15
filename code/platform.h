@@ -17,6 +17,7 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 
 typedef float real32;
+typedef float r32;
 typedef double real64;
 
 typedef float f32;
@@ -38,6 +39,8 @@ typedef size_t memory_index;
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 #define Minimum(A, B) ((A < B) ? (A) : (B))
 #define Maximum(A, B) ((A > B) ? (A) : (B))
+
+#define FLOAT_MAX 3.402823466e+38F
 
 #define WIN32_STATE_FILE_NAME_COUNT MAX_PATH
 

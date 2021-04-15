@@ -248,6 +248,12 @@ Inner(v2 A, v2 B)
 }
 
 inline real32
+Dot(v2 A, v2 B)
+{
+    return (Inner(A, B));
+}
+
+inline real32
 LengthSq(v2 A)
 {
     real32 Result = Inner(A, A);
@@ -347,6 +353,33 @@ operator==(v3 P1, v3 P2)
     bool32 Result = (P1.x == P2.x) && (P1.y == P2.y) && (P1.z == P2.z);
     
     return(Result);
+}
+inline v3
+operator-(v3 A, v3 B)
+{
+    v3 Result;
+    
+    Result.x = A.x - B.x;
+    Result.y = A.y - B.y;
+    Result.z = A.z - B.z;
+    
+    return(Result);
+}
+
+inline real32
+Inner(v3 A, v3 B)
+{
+    // NOTE(Eric): This is the Dot Product!
+    // Length(A)*Length(B)*cos(Theta) == A.x*B.x + A.y*B.y
+    real32 Result = A.x*B.x + A.y*B.y + A.z*B.z;
+    
+    return(Result);
+}
+
+inline real32
+Dot(v3 A, v3 B)
+{
+    return (Inner(A, B));
 }
 
 inline v3

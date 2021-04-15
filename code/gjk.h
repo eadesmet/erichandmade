@@ -44,5 +44,4 @@ RemoveSimplexP(simplex *Simplex, u32 Index)
     Simplex->Count--;
 }
 
-
 #endif //GJK_H

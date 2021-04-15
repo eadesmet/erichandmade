@@ -405,7 +405,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
     
+    // NOTE(Eric): Only used for *_TIMED_BLOCK in platform.h
     DebugMemory = Memory;
+    
     BEGIN_TIMED_BLOCK(GameUpdateAndRender);
     
     game_state *GameState = (game_state *)Memory->PermanentStorage;
@@ -443,6 +445,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             //InitializeAsteroid(SampleAsteroid, ...)
         }
         */
+        
         Memory->IsInitialized = true;
     }
     
@@ -640,6 +643,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     //  to start 'Level 2' !!
     // Then we can save level data and scores easy
     
+    // TODO(Eric): In order to do the idea above, I also should set up "GamePointMax/Min" values
+    // to check when asteroids are out of the current play area, to set them inactive.
+    // And to reset them, loop through entities, if it's inactive overwrite it.
+    
 #if 1
     // Render a coordinate system to show rotation and scaling
     GameState->Time += Input->dtForFrame;
@@ -662,7 +669,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         for (real32 x = 0; x < 1.0f; x += 0.25f)
         {
-            RenderSquare(Render, Origin + x*XAxis->P2 + y*YAxis->P2, 2, V3(1,1,1));
+            RenderSquare(Render, ScreenOrigin + x*XAxis->P2 + y*YAxis->P2, 2, V3(1,1,1));
         }
     }
     XAxis->P2 += ScreenOrigin;
@@ -686,13 +693,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     
     // NOTE(Eric): Render Mouse Position
     RenderWireBoundingBox(Render, &GameState->MousePos);
-#endif
     
     // NOTE(Eric): Man this whole 'test' is just a huge hack....
     CheckPointInPolygon(GameState, Render, GameState->MousePos.Min, GameState->Entities[4]);
     
-    GJK(&GameState->Entities[0], &GameState->Entities[1]);
+    //GJK(&GameState->Entities[0], &GameState->Entities[1]);
     
+    player Player = GameState->Player;
+    b32 IsCenterInsidePlayer = CheckPointInTriangle(Player.FrontP, Player.BackRightP, Player.BackLeftP, ScreenPointToGamePoint(ScreenCenter));
+    
+    entity TestEntity = InitAsteroidB(V2(0,0), V2(0,0), 0);
+    b32 IsAsteroidConcave = CheckConcave(&TestEntity);
+    
+    
+#endif
     
     END_TIMED_BLOCK(AllRendering);
     

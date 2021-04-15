@@ -346,7 +346,7 @@ internal void
 CheckPointInPolygon(game_state *GameState, render_buffer *Render, v2 P, entity A)
 {
     // NOTE(Eric): This is copied straight from the code example
-    // of how to do a Grid based point-in-polygon algorithm
+    // of how to do a Grid based point-in-polygon algorithm (from the point-in-polygon paper)
     /* Impose a grid upon the polygon and test only the local edges against the
  * point.
  *

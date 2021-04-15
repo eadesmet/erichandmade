@@ -1,3 +1,30 @@
+4/13/2021:
+{
+	Original Asteroids gameplay: https://www.youtube.com/watch?v=WYSupJ5r2zo
+		- No rotations
+		- No asteroid-asteroid collisions
+		- player movement; wraps to opposite edge
+		- fast shooting, projectiles are small dots/pixels
+		- asteroids break into smaller ones (smaller ones move faster)
+		- alien ships that shoot back at you
+		- once everything is gone, a new set spawns in and the game keeps going
+}
+
+4/12/2021:
+{
+	I've been going down some rabbit holes today.
+		Started on finishing up GJK, which means getting some convex polygons from my concave ones
+		Then read a lot about how to tell if a polygon is concave vs convex
+		started writing one
+		read an example code of this
+		started writing some more of my own
+		realized i wanted a circular singly-linked list
+		couldn't get one to work
+		realize it comes down to memory allocation
+		read through HMH Notes on day 15, about game memory
+		got linked to gingerbill's post/series on memory allocations
+}
+
 3/31/2021:
 {
 	Now on HH 103, 24 in
