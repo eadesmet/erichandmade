@@ -1,3 +1,15 @@
+4/16/2021:
+{
+	Do I remember any notes from the Eskil's code discussion last night?
+		some of the stuff about naming
+		array remove:
+			array[i] = array[--array_length];
+	I might finally today start up a new project and mess with some things
+	Or, I should 'fix' the code here
+	One of the things he said is to never leave code you don't like, just fix it
+	and there's plenty of things to clean up here.
+}
+
 4/13/2021:
 {
 	Original Asteroids gameplay: https://www.youtube.com/watch?v=WYSupJ5r2zo

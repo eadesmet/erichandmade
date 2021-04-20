@@ -612,7 +612,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     BEGIN_TIMED_BLOCK(AllRendering);
     
     ClearBackground(Render);
-    //RenderMap(GameState, Render, &GameState->Map);
+    RenderMap(GameState, Render, &GameState->Map);
     RenderUI(GameState, Render, Input->dtForFrame);
     RenderPlayer(GameState, Render, &GameState->Player, &GameState->Map);
 #if 1
@@ -692,7 +692,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     }
     
     // NOTE(Eric): Render Mouse Position
-    RenderWireBoundingBox(Render, &GameState->MousePos);
+    //RenderWireBoundingBox(Render, &GameState->MousePos);
     
     // NOTE(Eric): Man this whole 'test' is just a huge hack....
     CheckPointInPolygon(GameState, Render, GameState->MousePos.Min, GameState->Entities[4]);
