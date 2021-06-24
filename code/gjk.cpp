@@ -67,6 +67,10 @@ HandleTriangleSimplex(simplex *Simplex, v2 *Direction)
     v2 B = (Simplex->Nodes + Simplex->Count-2)->P;
     v2 C = (Simplex->Nodes + Simplex->Count-3)->P;
     
+    Assert(A != B);
+    Assert(B != C);
+    Assert(C != A);
+    
     v2 AB = B - A;
     v2 AC = C - A;
     v2 AO = Origin - A;
@@ -99,6 +103,27 @@ HandleSimplex(simplex *Simplex, v2 *Direction)
     return HandleTriangleSimplex(Simplex, Direction);
 }
 
+internal void
+RelativeToActual(entity *E)
+{
+    for(u32 Index = 0;
+        Index < E->PointCount;
+        Index++)
+    {
+        E->Points[Index] += E->CenterP;
+    }
+}
+internal void
+ActualToRelative(entity *E)
+{
+    for(u32 Index = 0;
+        Index < E->PointCount;
+        Index++)
+    {
+        E->Points[Index] -= E->CenterP;
+    }
+}
+
 internal b32
 GJK(entity *E1, entity *E2)
 {
@@ -107,10 +132,15 @@ GJK(entity *E1, entity *E2)
     // GJK simplifies it by only checking a series of Simplexes (in our case triangles)
     // for the origin, instead of the entire minkowski difference.
     
-    // TODO(Eric): Convert the entities shapes into Convex
+    // NOTE(Eric): Requires the shapes be Convex!
     
     // TODO(Eric): Also realize that the Points in our entities are RELATIVE TO THE CENTERP
     // TODO(Eric): THIS MEANS EVERY ENTITY WILL ALWAYS BE COLLIDING IF WE DON'T CONVERT THEM FIRST
+    RelativeToActual(E1);
+    RelativeToActual(E2);
+    
+    // TODO(Eric): IDK, this isn't working. Infinite loop, simplex is swapping between 2 and 3 points.
+    // Often when it's 3 points, two of the points are the same (and it's not actually a triangle, like it expects)
     
     // The Simplex is a triangle within the Minkowski difference
     simplex Simplex = NewSimplex();
@@ -131,10 +161,18 @@ GJK(entity *E1, entity *E2)
         // If the new support point is not past the origin, then we are not colliding
         v2 NewestPoint = Simplex.Nodes[Simplex.Count-1].P;
         if (Inner(NewestPoint, D) < 0)
+        {
+            ActualToRelative(E1);
+            ActualToRelative(E2);
             return(false);
+        }
         
         if (HandleSimplex(&Simplex, &D))
+        {
+            ActualToRelative(E1);
+            ActualToRelative(E2);
             return(true);
+        }
     }
 }
 
@@ -163,11 +201,9 @@ WhichDirection(v2 p, v2 q, v2 r)
     return Result;
 }
 
-internal b32
+internal s32
 CheckConcave(entity *E)
 {
-    b32 Result = false;
-    
     // Assumes at least 3 points (starting index 3)
     v2 *p = E->Points;
     v2 *q = E->Points + 1;
@@ -180,18 +216,22 @@ CheckConcave(entity *E)
         
         // Given our assumptions, it must always turn clockwise
         if (WhichDirection(*p, *q, *r) != -1)
-            return true;
-        
+            return Index;//return true;
     }
     
-    return Result;
+    // NOTE(Eric): Check the last point to the starting point (kind of a hack, I guess?)
+    v2 *SecondToLastPoint = E->Points + E->PointCount - 2;
+    v2 *LastPoint = E->Points + E->PointCount - 1;
+    v2 *FirstPoint = E->Points;
+    if (WhichDirection(*SecondToLastPoint, *LastPoint, *FirstPoint) != -1)
+        return E->PointCount - 1;
+    
+    return -1;
 }
 
-internal entity
+internal void
 ConvertConcaveToConvex(entity *E)
 {
-    // TODO(Eric): Implement.
-    
     /*
 To check if a polygon is convex:
 "
@@ -212,10 +252,38 @@ This won't work for shapes like a pentagram, however we can assume nothing is li
 (At this point in time, anyway)
 */
     
-    entity Result = {};
-    
-    
-    return Result;
+    // NOTE(Eric): (6/23/21) Are we back???
+    // Just thinking about this a bit: If detecting the first 'left' turn on a concave check,
+    // on the left turn, I'd just need to bump out the point (just enough so it isn't a left turn)
+    s32 LeftTurnIndex = CheckConcave(E);
+    while(LeftTurnIndex != -1)
+    {
+        // I would need to figure out which direction is "left"
+        v2 *P, *NextP;
+        if (LeftTurnIndex == (s32)(E->PointCount - 1))
+        {
+            NextP = E->Points;
+        }
+        else
+        {
+            NextP = E->Points + (LeftTurnIndex + 1);
+        }
+        P = E->Points + LeftTurnIndex;
+        
+        // So the line from LastP to NextP is valid,
+        
+        // Wait, honestly.. Just _remove_ that point! Shift P = NextP. That's it.
+        for(u32 Index = LeftTurnIndex;
+            Index < E->PointCount - 1;
+            Index++)
+        {
+            E->Points[Index] = E->Points[Index+1];
+        }
+        E->Points[E->PointCount--] = {};
+        //break;
+        
+        LeftTurnIndex = CheckConcave(E);
+    }
 }
 
 

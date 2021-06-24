@@ -286,7 +286,7 @@ CheckCollision_AsteroidAsteroid(entity *Ast, entity *AstTwo)
 }
 
 internal void
-HandleAsteroidColissions(game_state *GameState, entity *TestAsteroid, real32 dt)
+HandleAsteroidColissions(game_state *GameState, entity *TestAsteroid, real32 dt, b32 UseGJK = false)
 {
     // TODO(Eric): Also check whether they are inside game bounds
     // NOTE(Eric): This also has to account for whether it will eventually reach in-bounds
@@ -315,8 +315,18 @@ HandleAsteroidColissions(game_state *GameState, entity *TestAsteroid, real32 dt)
         if (AstTwo->State == EntityState_InActive) continue;
         if (TestAsteroid->CenterP - AstTwo->CenterP > MaxAsteroidSize) continue;
         
-        asteroid_collision_result CollisionResult = CheckCollision_AsteroidAsteroid(TestAsteroid, AstTwo);
-        if (CollisionResult.IsColliding)
+        b32 Hit = 0;
+        if (UseGJK)
+        {
+            Hit = GJK(TestAsteroid, AstTwo);
+        }
+        else
+        {
+            asteroid_collision_result CollisionResult = CheckCollision_AsteroidAsteroid(TestAsteroid, AstTwo);
+            Hit = CollisionResult.IsColliding;
+        }
+        
+        if (Hit)
         {
             // TODO(Eric): IsColliding is never actually used, just remove it
             TestAsteroid->IsColliding = true;

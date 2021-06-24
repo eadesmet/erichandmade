@@ -5,8 +5,8 @@ global_variable game_memory *DebugMemory;
 #include "random.h"
 #include "tile.cpp"
 #include "render.cpp"
-#include "collision.cpp"
 #include "gjk.cpp"
+#include "collision.cpp"
 #include "walkline.cpp"
 #include "hash.h"
 //#include "rasterize.cpp"
@@ -223,14 +223,17 @@ InitAsteroids(game_state *GameState, u32 Seed)
             
             real32 RandomRotationRate = 0;//RandomBetween(&Series, -0.01f, 0.01f);
             
+            entity NewAsteroid = {};
             if (EntityIndex % 2 == 0)
             {
-                GameState->Entities[EntityIndex++] = InitAsteroidA(P1, P2, RandomRotationRate);
+                NewAsteroid = InitAsteroidA(P1, P2, RandomRotationRate);
             }
             else
             {
-                GameState->Entities[EntityIndex++] = InitAsteroidB(P1, P2, RandomRotationRate);
+                NewAsteroid = InitAsteroidB(P1, P2, RandomRotationRate);
             }
+            ConvertConcaveToConvex(&NewAsteroid);
+            GameState->Entities[EntityIndex++] = NewAsteroid;
             GameState->EntityCount++;
         }
     }
@@ -571,7 +574,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                     // Handle Asteroid-Asteroid collisions, and Asteroid-Player collisions
                     
                     // TODO(Eric): huh... Is this the right place for this?
-                    HandleAsteroidColissions(GameState, Entity, Input->dtForFrame);
+                    HandleAsteroidColissions(GameState, Entity, Input->dtForFrame, false);
                     break;
                 }
                 case EntityType_Projectile:
@@ -701,9 +704,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     
     player Player = GameState->Player;
     b32 IsCenterInsidePlayer = CheckPointInTriangle(Player.FrontP, Player.BackRightP, Player.BackLeftP, ScreenPointToGamePoint(ScreenCenter));
-    
-    entity TestEntity = InitAsteroidB(V2(0,0), V2(0,0), 0);
-    b32 IsAsteroidConcave = CheckConcave(&TestEntity);
     
     
 #endif
