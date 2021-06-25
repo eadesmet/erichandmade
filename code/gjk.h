@@ -35,13 +35,4 @@ AddSimplexP(simplex *Simplex, v2 P)
     Simplex->Nodes[Simplex->Count++] = NewNode;
 }
 
-inline void
-RemoveSimplexP(simplex *Simplex, u32 Index)
-{
-    for(u32 i = Index; i < Simplex->Count; i++)
-        Simplex->Nodes[i] = Simplex->Nodes[i+1];
-    
-    Simplex->Count--;
-}
-
 #endif //GJK_H

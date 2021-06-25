@@ -269,6 +269,21 @@ Length(v2 A)
 }
 
 inline v2
+TripleProduct(v2 a, v2 b, v2 c)
+{
+    v2 Result;
+    
+    float ac = a.x * c.x + a.y * c.y; // perform a.dot(c)
+    float bc = b.x * c.x + b.y * c.y; // perform b.dot(c)
+    
+    // perform b * a.dot(c) - a * b.dot(c)
+    Result.x = b.x * ac - a.x * bc;
+    Result.y = b.y * ac - a.y * bc;
+    
+    return Result;
+}
+
+inline v2
 Normalize(v2 A)
 {
     // NOTE(Eric): A Normalized vector is a vector that has a length of 1 (but same direction)

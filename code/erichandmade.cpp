@@ -53,12 +53,12 @@ InitAsteroidA(v2 StartP, v2 EndP, real32 RotationRate)
     
     A.RotationRate = RotationRate;
     
-    A.Points[0] = V2(0, 2); // Relative to the Center.
+    A.Points[0] = V2(0, 3); // Relative to the Center.
     A.Points[1] = V2(1, 3);
     A.Points[2] = V2(2, 0); // front
     A.Points[3] = V2(0, -2);
-    A.Points[4] = V2(-2, 1);
-    A.Points[5] = V2(-1, 1); // Then 5 connects to 0
+    A.Points[4] = V2(-2, 0);
+    A.Points[5] = V2(-1.5, 1.5); // Then 5 connects to 0
     A.PointCount = 6;
     
     A.State = EntityState_Active;
@@ -160,7 +160,7 @@ InitAsteroids(game_state *GameState, u32 Seed)
             }
         }
     */
-    u32 NumOfAsteroids = 30;
+    u32 NumOfAsteroids = 20;
     for (u8 AstIndex = 1;           // NOTE(Eric): 1-30
          AstIndex <= NumOfAsteroids;
          ++AstIndex)
@@ -574,7 +574,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                     // Handle Asteroid-Asteroid collisions, and Asteroid-Player collisions
                     
                     // TODO(Eric): huh... Is this the right place for this?
-                    HandleAsteroidColissions(GameState, Entity, Input->dtForFrame, false);
+                    HandleAsteroidColissions(GameState, Entity, Input->dtForFrame, true);
                     break;
                 }
                 case EntityType_Projectile:

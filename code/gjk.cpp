@@ -8,8 +8,8 @@ FurthestPoint(entity *E, v2 Direction)
     // It is defined as the maximum dot product of all vertices;
     v2 Result = {};
     
-    f32 Max = -FLOAT_MAX;//-99999.0f;
-    for (u32 PointIndex = 0; PointIndex < ArrayCount(E->Points); ++PointIndex)
+    f32 Max = Inner(E->Points[0], Direction);
+    for (u32 PointIndex = 1; PointIndex < E->PointCount; ++PointIndex)
     {
         v2 *Point = E->Points + PointIndex;
         
@@ -25,32 +25,48 @@ FurthestPoint(entity *E, v2 Direction)
 }
 
 internal v2
+AveragePoint(entity E)
+{
+    v2 Result = {};
+    
+    for (u32 PointIndex = 0; PointIndex < E.PointCount; ++PointIndex)
+    {
+        v2 *Point = E.Points + PointIndex;
+        Result += *Point;
+    }
+    
+    Result.x /= E.PointCount;
+    Result.y /= E.PointCount;
+    
+    return Result;
+}
+
+internal v2
 Support(entity *E1, entity *E2, v2 Direction)
 {
-    v2 Result = FurthestPoint(E1, Direction) - FurthestPoint(E2, -Direction);
+    v2 E1Furthest = FurthestPoint(E1, Direction);
+    v2 E2NegFurthest = FurthestPoint(E2, -Direction);
+    
+    v2 Result = E1Furthest - E2NegFurthest;
+    
+    Assert((Result.x != 0 && Result.y != 0));
     
     return(Result);
 }
 
+#if 0
 internal b32
-HandleLineSimplex(simplex *Simplex, v2 *Direction)
+HandleLineSimplex(v2 *Simplex, v2 *Direction)
 {
-    // TODO(Eric): Handle edge case when the Origin lies on the line.
-    
     v2 A = (Simplex->Nodes + Simplex->Count-1)->P;
     v2 B = (Simplex->Nodes + Simplex->Count-2)->P;
     
-    v2 BA = B - A;
-    v2 BO = Origin - B;
+    v2 AB = B - A;
+    v2 AO = -A;
+    *Direction = TripleProduct(AB, AO, AB);
     
-    // TODO(Eric): I don't know if this is right.
-    // All resources I've seen use the cross product as in the comment,
-    // but cross product only makes sense for v3.
-    // So would it make sense to change all these to v3s with Z=0?
-    v2 BAPerp = Perp(BA);//Cross(Cross(BA, BO), BA);
-    
-    // Set the new direction to be the perpendicular of the line
-    Direction = &BAPerp;
+    if (LengthSq(*Direction) == 0)
+        *Direction = Perp(AB);
     
     // Returns false because we only have a line, 
     // and the origin cannot be contained within the simplex yet.
@@ -67,47 +83,50 @@ HandleTriangleSimplex(simplex *Simplex, v2 *Direction)
     v2 B = (Simplex->Nodes + Simplex->Count-2)->P;
     v2 C = (Simplex->Nodes + Simplex->Count-3)->P;
     
-    Assert(A != B);
-    Assert(B != C);
-    Assert(C != A);
+    //Assert(A != B);
+    //Assert(B != C);
+    //Assert(C != A);
     
     v2 AB = B - A;
     v2 AC = C - A;
     v2 AO = Origin - A;
     
-    v2 ABPerp = Perp(AB);
-    v2 ACPerp = Perp(AC);
+    v2 ACPerp = TripleProduct(AB, AC, AC);
     
-    if (Inner(ABPerp, AO) > 0) // In Region AB
+    if (Inner(ACPerp, AO) >= 0) // In Region AB
     {
-        RemoveSimplexP(Simplex, Simplex->Count-2); // Remove C
-        *Direction = ABPerp;
-        return(false);
-    }
-    else if (Inner(ACPerp, AO) > 0) // In Region AC
-    {
-        RemoveSimplexP(Simplex, Simplex->Count-2); // Remove B
         *Direction = ACPerp;
-        return(false);
+    }
+    else // In Region AC
+    {
+        v2 ABPerp = TripleProduct(AC, AB, AB);
+        if (Inner(ABPerp, AO) < 0)
+            return(true);
+        
+        Simplex->Nodes[0] = Simplex->Nodes[1]; // Swap first element (point C)
+        *Direction = ABPerp;
     }
     
-    // Our triangle contains the origin
-    return(true);
+    Simplex->Nodes[1] = Simplex->Nodes[2]; // Swap element in the middle (point B)
+    Simplex->Count--;
+    
+    return(false);
 }
 
 internal b32
-HandleSimplex(simplex *Simplex, v2 *Direction)
+HandleSimplex(v2 Simplex, u32 Index, v2 *Direction)
 {
-    if (Simplex->Count == 2)
+    if (Index < 2)
         return HandleLineSimplex(Simplex, Direction);
     return HandleTriangleSimplex(Simplex, Direction);
 }
+#endif
 
 internal void
 RelativeToActual(entity *E)
 {
     for(u32 Index = 0;
-        Index < E->PointCount;
+        Index <= E->PointCount;
         Index++)
     {
         E->Points[Index] += E->CenterP;
@@ -117,7 +136,7 @@ internal void
 ActualToRelative(entity *E)
 {
     for(u32 Index = 0;
-        Index < E->PointCount;
+        Index <= E->PointCount;
         Index++)
     {
         E->Points[Index] -= E->CenterP;
@@ -132,48 +151,106 @@ GJK(entity *E1, entity *E2)
     // GJK simplifies it by only checking a series of Simplexes (in our case triangles)
     // for the origin, instead of the entire minkowski difference.
     
+    // NOTE(Eric): This is so that adding back the centerP at the end isn't different than what it came in with.
+    entity one = *E1;
+    entity two = *E2;
+    RelativeToActual(&one);
+    RelativeToActual(&two);
+    
     // NOTE(Eric): Requires the shapes be Convex!
+    
+    u32 IterCount = 0;
     
     // TODO(Eric): Also realize that the Points in our entities are RELATIVE TO THE CENTERP
     // TODO(Eric): THIS MEANS EVERY ENTITY WILL ALWAYS BE COLLIDING IF WE DON'T CONVERT THEM FIRST
-    RelativeToActual(E1);
-    RelativeToActual(E2);
     
-    // TODO(Eric): IDK, this isn't working. Infinite loop, simplex is swapping between 2 and 3 points.
-    // Often when it's 3 points, two of the points are the same (and it's not actually a triangle, like it expects)
+    v2 P1 = AveragePoint(one);
+    v2 P2 = AveragePoint(two);
+    
+    // TODO(Eric): IDK, this isn't working. 
+    // Kind of there, but now we aren't catching all collisions? Maybe that's due to my loop + response
+    // This is really just annoying. I am very tempted to just use circle collisions and call it good.
+    // In debugging, I just ripped it straight from this:
+    // https://github.com/kroitor/gjk.c/blob/master/gjk.c
     
     // The Simplex is a triangle within the Minkowski difference
-    simplex Simplex = NewSimplex();
+    //simplex Simplex = NewSimplex();
+    u32 Index = 0;
+    v2 Simplex[3];
+    v2 a, b, c, ab, ac, ao, abperp, acperp;
     
     // The first direction (can be picked randomly, but this is standard)
-    v2 D = Normalize(E2->CenterP - E1->CenterP);
+    //v2 D = (E2->CenterP - E1->CenterP);
+    v2 D = (P1 - P2);
+    
+    // If the original direction is zero, set it to an arbitrary axis
+    if (D.x == 0 && D.y == 0)
+        D.x = 1.0f;
     
     // The first point of the Simplex is in from our first direction
-    AddSimplexP(&Simplex, Support(E1, E2, D));
+    a = Simplex[0] = Support(&one, &two, D);
+    
+    if (Inner(a, D) < 0)
+        return false; // No collision
     
     // Next direction is Towards the origin
-    D = Origin - Simplex.Nodes[0].P;
+    D = -a;
     while(true)
     {
+        Assert(IterCount++ < 1000);
         // New support point, towards the origin
-        AddSimplexP(&Simplex, Support(E1, E2, D));
+        //AddSimplexP(&Simplex, Support(E1, E2, D));
+        a = Simplex[++Index] = Support(&one, &two, D);
         
         // If the new support point is not past the origin, then we are not colliding
-        v2 NewestPoint = Simplex.Nodes[Simplex.Count-1].P;
-        if (Inner(NewestPoint, D) < 0)
+        if (Inner(a, D) <= 0)
         {
-            ActualToRelative(E1);
-            ActualToRelative(E2);
-            return(false);
+            return (false);
         }
         
-        if (HandleSimplex(&Simplex, &D))
+        ao = -a;
+        
+        //if (HandleSimplex(&Simplex, Index, &D))
+        if (Index < 2)
         {
-            ActualToRelative(E1);
-            ActualToRelative(E2);
-            return(true);
+            b = Simplex[0];
+            ab = b - a;
+            D = TripleProduct(ab, ao, ab);
+            if (LengthSq(ab) == 0)
+                D = Perp(ab);
+            continue;
         }
+        
+        b = Simplex[1];
+        c = Simplex[0];
+        ab = b - a; // from point A to B
+        ac = c - a; // from point A to C
+        
+        acperp = TripleProduct(ab, ac, ac);
+        
+        if (Inner(acperp, ao) >= 0) 
+        {
+            D = acperp; // new direction is normal to AC towards Origin
+        } 
+        else 
+        {
+            abperp = TripleProduct(ac, ab, ab);
+            
+            if (Inner(abperp, ao) < 0)
+            {
+                return (true); // collision
+            }
+            
+            Simplex[0] = Simplex[1]; // swap first element (point C)
+            
+            D = abperp; // new direction is normal to AB towards Origin
+        }
+        
+        Simplex[1] = Simplex[2]; // swap element in the middle (point B)
+        --Index;
     }
+    
+    return(false);
 }
 
 
